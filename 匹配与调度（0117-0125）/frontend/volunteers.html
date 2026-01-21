@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>志愿者管理 - 导入与列表</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 24px; }
+    .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+    .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+    label { font-size: 13px; color: #444; display:block; margin-bottom: 6px; }
+    input, select, button { padding: 8px 10px; border-radius: 8px; border: 1px solid #ccc; }
+    button { cursor: pointer; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; font-size: 13px; }
+    th { background: #fafafa; position: sticky; top: 0; }
+    .muted { color:#666; font-size: 13px; }
+    .ok { color: #0a7; }
+    .bad { color: #d33; }
+    pre { background: #f7f7f7; padding: 10px; border-radius: 8px; overflow: auto; }
+  </style>
+</head>
+
+<body>
+  <h2>志愿者管理</h2>
+  <div class="muted">
+    后端地址：<code id="baseLabel"></code>
+  </div>
+
+  <div class="card">
+    <h3>1) 导入（Preview → Commit）</h3>
+
+    <div class="row">
+      <div>
+        <label>选择 Excel（纯数据表：第1行字段名，从第2行开始全是数据）</label>
+        <input type="file" id="fileInput" accept=".xlsx,.xls" />
+      </div>
+
+      <div>
+        <label>strict（有错误就禁止提交）</label>
+        <select id="strictSel">
+          <option value="true" selected>true</option>
+          <option value="false">false</option>
+        </select>
+      </div>
+
+      <div style="margin-top:22px;">
+        <button id="btnPreview">Preview</button>
+      </div>
+
+      <div style="margin-top:22px;">
+        <button id="btnCommit" disabled>Commit</button>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:12px;">
+      <div class="muted">job_id：<code id="jobId">-</code></div>
+      <div class="muted">状态：<span id="status">-</span></div>
+    </div>
+
+    <h4>Preview 结果</h4>
+    <div id="previewBox" class="muted">尚未 preview</div>
+  </div>
+
+  <div class="card">
+    <h3>2) 列表查看（分页 + 筛选）</h3>
+
+    <div class="row">
+      <div>
+        <label>姓名搜索（q）</label>
+        <input id="q" placeholder="例如：王" />
+      </div>
+
+      <div>
+        <label>院系/专业搜索（department_q）</label>
+        <input id="department_q" placeholder="例如：计算机" />
+      </div>
+
+      <div>
+        <label>match_mode</label>
+        <select id="match_mode">
+          <option value="">全部</option>
+          <option value="direct">direct</option>
+          <option value="pre">pre</option>
+        </select>
+      </div>
+
+      <div>
+        <label>mode</label>
+        <select id="mode">
+          <option value="">全部</option>
+          <option value="online">online</option>
+          <option value="offline">offline</option>
+          <option value="both">both</option>
+        </select>
+      </div>
+
+      <div>
+        <label>每页条数（limit）</label>
+        <select id="limit">
+          <option value="10">10</option>
+          <option value="20" selected>20</option>
+          <option value="50">50</option>
+        </select>
+      </div>
+
+      <div style="margin-top:22px;">
+        <button id="btnLoad">加载列表</button>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px;">
+      <button id="btnPrev">上一页</button>
+      <button id="btnNext">下一页</button>
+      <div class="muted">offset：<code id="offsetLabel">0</code> / total：<code id="totalLabel">0</code></div>
+    </div>
+
+    <div style="margin-top:12px; max-height: 420px; overflow:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>seq_no</th>
+            <th>name</th>
+            <th>gender</th>
+            <th>student_no</th>
+            <th>email</th>
+            <th>dept/major</th>
+            <th>mode</th>
+            <th>match_mode</th>
+            <th>capacity</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <h4>调试日志</h4>
+    <pre id="log"></pre>
+  </div>
+
+<script>
+  const BASE = "http://127.0.0.1:8000";
+  document.getElementById("baseLabel").textContent = BASE;
+
+  let currentJobId = null;
+  let offset = 0;
+  let total = 0;
+
+  const $ = (id) => document.getElementById(id);
+
+  function log(msg, obj) {
+    const el = $("log");
+    el.textContent = msg + (obj ? "\n" + JSON.stringify(obj, null, 2) : "") + "\n\n" + el.textContent;
+  }
+
+  function setStatus(text, ok=true) {
+    const el = $("status");
+    el.textContent = text;
+    el.className = ok ? "ok" : "bad";
+  }
+
+  function getListParams() {
+    const params = new URLSearchParams();
+    const q = $("q").value.trim();
+    const dept = $("department_q").value.trim();
+    const match = $("match_mode").value;
+    const mode = $("mode").value;
+    const limit = $("limit").value;
+
+    params.set("offset", String(offset));
+    params.set("limit", String(limit));
+    if (q) params.set("q", q);
+    if (dept) params.set("department_q", dept);
+    if (match) params.set("match_mode", match);
+    if (mode) params.set("mode", mode);
+    return params;
+  }
+
+  async function loadVolunteers() {
+    const params = getListParams();
+    const url = `${BASE}/api/volunteers?${params.toString()}`;
+    log("GET " + url);
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (!res.ok) {
+      setStatus("列表加载失败", false);
+      log("ERROR", data);
+      return;
+    }
+
+    total = data.total;
+    $("totalLabel").textContent = String(total);
+    $("offsetLabel").textContent = String(offset);
+
+    const tbody = $("tbody");
+    tbody.innerHTML = "";
+
+    for (const v of data.items) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${v.seq_no}</td>
+        <td>${v.name ?? ""}</td>
+        <td>${v.gender ?? ""}</td>
+        <td>${v.student_no ?? ""}</td>
+        <td>${v.email ?? ""}</td>
+        <td>${v.department_major ?? ""}</td>
+        <td>${v.mode ?? ""}</td>
+        <td>${v.match_mode ?? ""}</td>
+        <td>${v.capacity ?? ""}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    setStatus("列表已更新", true);
+  }
+
+  $("btnPreview").addEventListener("click", async () => {
+    const file = $("fileInput").files[0];
+    if (!file) { alert("请先选择 Excel 文件"); return; }
+
+    const strict = $("strictSel").value;
+    const form = new FormData();
+    form.append("file", file);
+
+    const url = `${BASE}/api/volunteers/import/preview?strict=${encodeURIComponent(strict)}&max_preview_rows=50`;
+    log("POST " + url);
+
+    const res = await fetch(url, { method: "POST", body: form });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setStatus("Preview 失败", false);
+      $("previewBox").innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+      log("ERROR", data);
+      return;
+    }
+
+    currentJobId = data.job_id;
+    $("jobId").textContent = currentJobId;
+    $("btnCommit").disabled = false;
+    setStatus("Preview 成功", true);
+
+    const stats = data.stats || {};
+    const summary = data.error_summary || [];
+    const preview = data.preview || [];
+
+    $("previewBox").innerHTML = `
+      <div>总行数：<b>${stats.total_rows}</b>，有效：<b>${stats.valid_rows}</b>，错误：<b class="${stats.error_rows>0?'bad':'ok'}">${stats.error_rows}</b></div>
+      <div style="margin-top:8px;">错误汇总：</div>
+      <pre>${JSON.stringify(summary, null, 2)}</pre>
+      <div>前几行预览：</div>
+      <pre>${JSON.stringify(preview.slice(0, 5), null, 2)}</pre>
+    `;
+  });
+
+  $("btnCommit").addEventListener("click", async () => {
+    if (!currentJobId) { alert("请先 preview"); return; }
+    const url = `${BASE}/api/volunteers/import/${encodeURIComponent(currentJobId)}/commit`;
+    log("POST " + url);
+
+    const res = await fetch(url, { method: "POST" });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setStatus("Commit 失败", false);
+      log("ERROR", data);
+      alert("Commit 失败：\n" + JSON.stringify(data, null, 2));
+      return;
+    }
+
+    setStatus("Commit 成功", true);
+    log("COMMIT OK", data);
+    alert("Commit 成功，插入 " + data.inserted + " 条");
+    offset = 0;
+    await loadVolunteers();
+  });
+
+  $("btnLoad").addEventListener("click", async () => {
+    offset = 0;
+    await loadVolunteers();
+  });
+
+  $("btnPrev").addEventListener("click", async () => {
+    const limit = parseInt($("limit").value, 10);
+    offset = Math.max(0, offset - limit);
+    await loadVolunteers();
+  });
+
+  $("btnNext").addEventListener("click", async () => {
+    const limit = parseInt($("limit").value, 10);
+    if (offset + limit >= total) return;
+    offset = offset + limit;
+    await loadVolunteers();
+  });
+
+  loadVolunteers().catch(e => log("INIT ERROR", {message: e.message}));
+</script>
+</body>
+</html>
