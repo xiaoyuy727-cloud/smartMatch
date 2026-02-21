@@ -3,146 +3,628 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>学生管理 - 导入与列表</title>
+  <title>数星阁 · 学生上传</title>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 24px; }
-    .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
-    .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
-    label { font-size: 13px; color: #444; display:block; margin-bottom: 6px; }
-    input, select, button { padding: 8px 10px; border-radius: 8px; border: 1px solid #ccc; }
-    button { cursor: pointer; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; font-size: 13px; }
-    th { background: #fafafa; position: sticky; top: 0; }
-    .muted { color:#666; font-size: 13px; }
-    .ok { color: #0a7; }
-    .bad { color: #d33; }
-    pre { background: #f7f7f7; padding: 10px; border-radius: 8px; overflow: auto; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f7fb;
+      color: #1e293b;
+      margin: 0;
+      padding: 24px;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* 头部样式 - 带logo的新设计 */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      object-fit: cover;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+    }
+
+    .title-area h2 {
+      font-size: 28px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin: 0;
+      line-height: 1.2;
+    }
+
+    .title-area .subtitle {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    .badge {
+      background: #e2e8f0;
+      color: #475569;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge code {
+      background: #cbd5e1;
+      padding: 2px 8px;
+      border-radius: 12px;
+      color: #1e293b;
+    }
+
+    /* 其余样式保持不变... */
+    /* 卡片样式 */
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+      border: 1px solid rgba(226, 232, 240, 0.6);
+      transition: all 0.2s;
+    }
+
+    .card:hover {
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+    }
+
+    .card h3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #0f172a;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card h3::before {
+      content: '';
+      width: 4px;
+      height: 18px;
+      background: #2563eb;
+      border-radius: 2px;
+      display: inline-block;
+    }
+
+    .card h4 {
+      font-size: 15px;
+      font-weight: 500;
+      color: #334155;
+      margin: 20px 0 12px;
+    }
+
+    /* 网格布局 */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    /* 表单元素 */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #475569;
+      margin-bottom: 6px;
+      letter-spacing: 0.3px;
+    }
+
+    input, select, button {
+      font-family: inherit;
+      font-size: 14px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      background: white;
+      transition: all 0.2s;
+      color: #1e293b;
+    }
+
+    input:hover, select:hover {
+      border-color: #94a3b8;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    /* 按钮样式 */
+    .btn {
+      padding: 10px 20px;
+      border-radius: 12px;
+      font-weight: 500;
+      font-size: 14px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: white;
+      border: 1.5px solid #e2e8f0;
+      color: #475569;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      border: 1.5px solid #2563eb;
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #1d4ed8;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+    }
+
+    .btn-success {
+      background: #059669;
+      border: 1.5px solid #059669;
+      color: white;
+    }
+
+    .btn-success:hover:not(:disabled) {
+      background: #047857;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1.5px solid #e2e8f0;
+    }
+
+    .btn-outline:hover:not(:disabled) {
+      background: #f8fafc;
+      border-color: #94a3b8;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-icon {
+      padding: 10px;
+      width: 40px;
+    }
+
+    /* 文件上传区域 */
+    .file-upload {
+      border: 2px dashed #e2e8f0;
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      background: #f8fafc;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .file-upload:hover {
+      border-color: #2563eb;
+      background: #f0f9ff;
+    }
+
+    .file-upload input {
+      display: none;
+    }
+
+    .file-upload-label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .file-upload-icon {
+      font-size: 32px;
+    }
+
+    .file-upload-text {
+      font-weight: 500;
+      color: #2563eb;
+    }
+
+    .file-upload-hint {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    /* 状态标签 */
+    .status-bar {
+      background: #f8fafc;
+      padding: 16px;
+      border-radius: 16px;
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-label {
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    .status-value {
+      font-weight: 600;
+      color: #0f172a;
+      background: white;
+      padding: 4px 12px;
+      border-radius: 30px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .status-badge {
+      padding: 4px 12px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .status-badge.ok {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .status-badge.bad {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    /* 表格样式 */
+    .table-container {
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      overflow: auto;
+      max-height: 500px;
+      background: white;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th {
+      background: #f8fafc;
+      padding: 14px 12px;
+      font-weight: 600;
+      color: #475569;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+      position: sticky;
+      top: 0;
+      background: #f8fafc;
+      z-index: 10;
+    }
+
+    td {
+      padding: 12px;
+      border-bottom: 1px solid #f1f5f9;
+      color: #334155;
+    }
+
+    tr:hover td {
+      background: #f8fafc;
+    }
+
+    /* 预览区域 */
+    .preview-box {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 16px;
+      border-radius: 16px;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 12px;
+      overflow: auto;
+      max-height: 300px;
+      margin-top: 12px;
+    }
+
+    .preview-box pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    /* 日志区域 */
+    .log-box {
+      background: #0f172a;
+      color: #94a3b8;
+      padding: 16px;
+      border-radius: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      overflow: auto;
+      max-height: 200px;
+      margin-top: 12px;
+    }
+
+    .log-box pre {
+      margin: 0;
+      color: #94a3b8;
+    }
+
+    /* 分页控制 */
+    .pagination {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 16px;
+      padding: 12px;
+      background: #f8fafc;
+      border-radius: 40px;
+    }
+
+    .page-info {
+      padding: 6px 16px;
+      background: white;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+    }
+
+    /* 工具类 */
+    .flex { display: flex; }
+    .gap-2 { gap: 8px; }
+    .gap-4 { gap: 16px; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .mt-4 { margin-top: 16px; }
+    .mb-2 { margin-bottom: 8px; }
+    .w-full { width: 100%; }
+
+    /* 动画 */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.3s ease;
+    }
   </style>
 </head>
 
 <body>
-  <h2>学生管理</h2>
-  <div class="muted">
-    后端地址：<code id="baseLabel"></code>
-  </div>
-
-  <div class="card">
-    <h3>1) 导入（Preview → Commit）</h3>
-
-    <div class="row">
-      <div>
-        <label>选择 Excel（纯数据表：第1行字段名，从第2行开始全是数据）</label>
-        <input type="file" id="fileInput" accept=".xlsx,.xls" />
+  <div class="container">
+    <!-- 头部 - 带logo，标题为数星阁——学生上传 -->
+    <div class="header">
+      <div class="logo-area">
+        <!-- 插入1.png作为logo -->
+        <img src="1.png" alt="数星阁" class="logo" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'logo\' style=\'background:linear-gradient(135deg, #2563eb, #7c3aed); display:flex; align-items:center; justify-content:center; color:white; font-weight:bold;\'>星</div>' + this.parentElement.innerHTML">
+        <div class="title-area">
+          <h2>数星阁——学生上传</h2>
+          <div class="subtitle">志愿者匹配系统 · 数据管理</div>
+        </div>
       </div>
-
-      <div>
-        <label>strict（有错误就禁止提交）</label>
-        <select id="strictSel">
-          <option value="true" selected>true</option>
-          <option value="false">false</option>
-        </select>
-      </div>
-
-      <div style="margin-top:22px;">
-        <button id="btnPreview">Preview</button>
-      </div>
-
-      <div style="margin-top:22px;">
-        <button id="btnCommit" disabled>Commit</button>
+      <div class="badge">
+        <span>后端地址</span>
+        <code id="baseLabel"></code>
       </div>
     </div>
 
-    <div class="row" style="margin-top:12px;">
-      <div class="muted">job_id：<code id="jobId">-</code></div>
-      <div class="muted">状态：<span id="status">-</span></div>
-    </div>
+    <!-- 导入卡片 -->
+    <div class="card fade-in">
+      <h3>📤 导入数据</h3>
+      
+      <div class="grid-2">
+        <!-- 左侧：上传区域 -->
+        <div>
+          <div class="file-upload" onclick="document.getElementById('fileInput').click()">
+            <input type="file" id="fileInput" accept=".xlsx,.xls" />
+            <div class="file-upload-label">
+              <span class="file-upload-icon">📎</span>
+              <span class="file-upload-text">选择 Excel 文件</span>
+              <span class="file-upload-hint">支持 .xlsx, .xls 格式</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-4 mt-4">
+            <div style="flex:1">
+              <label>严格模式</label>
+              <select id="strictSel" class="w-full">
+                <option value="true" selected>✅ 开启 (有错误禁止提交)</option>
+                <option value="false">🔄 关闭 (允许提交)</option>
+              </select>
+            </div>
+          </div>
+        </div>
 
-    <h4>Preview 结果</h4>
-    <div id="previewBox" class="muted">尚未 preview</div>
-  </div>
-
-  <div class="card">
-    <h3>2) 列表查看（分页 + 筛选）</h3>
-
-    <div class="row">
-      <div>
-        <label>姓名搜索（q）</label>
-        <input id="q" placeholder="例如：张" />
+        <!-- 右侧：操作按钮 -->
+        <div>
+          <div class="grid-2">
+            <button class="btn btn-primary" id="btnPreview">
+              <span>🔍</span> 预览 Preview
+            </button>
+            <button class="btn btn-success" id="btnCommit" disabled>
+              <span>💾</span> 提交 Commit
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div>
-        <label>学段（grade_stage）</label>
-        <select id="grade_stage">
-          <option value="">全部</option>
-          <option value="1">小学(1)</option>
-          <option value="2">初中(2)</option>
-          <option value="3">高中(3)</option>
-        </select>
+      <!-- 状态栏 -->
+      <div class="status-bar">
+        <div class="status-item">
+          <span class="status-label">任务ID</span>
+          <span class="status-value"><code id="jobId">-</code></span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">状态</span>
+          <span id="status" class="status-badge ok">等待操作</span>
+        </div>
       </div>
 
-      <div>
-        <label>mode</label>
-        <select id="mode">
-          <option value="">全部</option>
-          <option value="online">online</option>
-          <option value="offline">offline</option>
-          <option value="both">both</option>
-        </select>
-      </div>
-
-      <div>
-        <label>优先（is_priority）</label>
-        <select id="is_priority">
-          <option value="">全部</option>
-          <option value="1">是(1)</option>
-          <option value="0">否(0)</option>
-        </select>
-      </div>
-
-      <div>
-        <label>每页条数（limit）</label>
-        <select id="limit">
-          <option value="10">10</option>
-          <option value="20" selected>20</option>
-          <option value="50">50</option>
-        </select>
-      </div>
-
-      <div style="margin-top:22px;">
-        <button id="btnLoad">加载列表</button>
+      <!-- 预览结果 -->
+      <h4>📋 预览结果</h4>
+      <div id="previewBox" class="preview-box">
+        <pre>尚未预览数据</pre>
       </div>
     </div>
 
-    <div class="row" style="margin-top:10px;">
-      <button id="btnPrev">上一页</button>
-      <button id="btnNext">下一页</button>
-      <div class="muted">offset：<code id="offsetLabel">0</code> / total：<code id="totalLabel">0</code></div>
-    </div>
+    <!-- 列表卡片 -->
+    <div class="card fade-in">
+      <h3>📋 学生列表</h3>
 
-    <div style="margin-top:12px; max-height: 420px; overflow:auto;">
-      <table>
-        <thead>
-          <tr>
-            <th>seq_no</th>
-            <th>name</th>
-            <th>gender</th>
-            <th>grade_stage</th>
-            <th>mode</th>
-            <th>subj1</th>
-            <th>subj2</th>
-            <th>subj3</th>
-            <th>priority</th>
-            <th>社工</th>
-            <th>电话</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
+      <!-- 筛选行 -->
+      <div class="grid-4">
+        <div class="form-group">
+          <label>姓名搜索</label>
+          <input id="q" placeholder="例如：张三" />
+        </div>
 
-    <h4>调试日志</h4>
-    <pre id="log"></pre>
+        <div class="form-group">
+          <label>学段</label>
+          <select id="grade_stage">
+            <option value="">全部</option>
+            <option value="1">小学 (1)</option>
+            <option value="2">初中 (2)</option>
+            <option value="3">高中 (3)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>模式</label>
+          <select id="mode">
+            <option value="">全部</option>
+            <option value="online">线上 online</option>
+            <option value="offline">线下 offline</option>
+            <option value="both">混合 both</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>优先</label>
+          <select id="is_priority">
+            <option value="">全部</option>
+            <option value="1">是 (优先)</option>
+            <option value="0">否 (普通)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 操作栏 -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div class="form-group" style="width: 120px;">
+            <label>每页条数</label>
+            <select id="limit">
+              <option value="10">10 条</option>
+              <option value="20" selected>20 条</option>
+              <option value="50">50 条</option>
+              <option value="100">100 条</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" id="btnLoad" style="margin-top: 6px;">
+            <span>🔄</span> 加载列表
+          </button>
+        </div>
+
+        <!-- 分页 -->
+        <div class="pagination">
+          <button class="btn btn-outline btn-icon" id="btnPrev" title="上一页">←</button>
+          <span class="page-info">
+            <span id="offsetLabel">0</span> - <span id="totalLabel">0</span>
+          </span>
+          <button class="btn btn-outline btn-icon" id="btnNext" title="下一页">→</button>
+        </div>
+      </div>
+
+      <!-- 表格 -->
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>学号</th>
+              <th>姓名</th>
+              <th>性别</th>
+              <th>学段</th>
+              <th>模式</th>
+              <th>科目1</th>
+              <th>科目2</th>
+              <th>科目3</th>
+              <th>优先</th>
+              <th>社工</th>
+              <th>电话</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr>
+              <td colspan="11" style="text-align: center; padding: 40px; color: #94a3b8;">
+                ⏳ 点击「加载列表」查看数据
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 调试日志 -->
+      <h4 style="margin-top: 24px;">🔧 调试日志</h4>
+      <div class="log-box">
+        <pre id="log">系统初始化完成，等待操作...</pre>
+      </div>
+    </div>
   </div>
 
 <script>
@@ -159,13 +641,20 @@
 
   function log(msg, obj) {
     const el = $("log");
-    el.textContent = msg + (obj ? "\n" + JSON.stringify(obj, null, 2) : "") + "\n\n" + el.textContent;
+    const timestamp = new Date().toLocaleTimeString();
+    const content = `[${timestamp}] ${msg}` + (obj ? "\n" + JSON.stringify(obj, null, 2) : "");
+    el.textContent = content + "\n\n" + el.textContent;
+    // 限制日志行数
+    const lines = el.textContent.split('\n');
+    if (lines.length > 100) {
+      el.textContent = lines.slice(0, 100).join('\n');
+    }
   }
 
   function setStatus(text, ok=true) {
     const el = $("status");
     el.textContent = text;
-    el.className = ok ? "ok" : "bad";
+    el.className = `status-badge ${ok ? 'ok' : 'bad'}`;
   }
 
   function getListParams() {
@@ -189,49 +678,66 @@
   async function loadStudents() {
     const params = getListParams();
     const url = `${BASE}/api/students?${params.toString()}`;
-    log("GET " + url);
+    log("📥 请求列表", { url });
 
-    const res = await fetch(url);
-    const data = await res.json();
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
 
-    if (!res.ok) {
-      setStatus("列表加载失败", false);
-      log("ERROR", data);
-      return;
+      if (!res.ok) {
+        setStatus("加载失败", false);
+        log("❌ 错误", data);
+        return;
+      }
+
+      total = data.total;
+      $("totalLabel").textContent = String(total);
+      $("offsetLabel").textContent = String(offset);
+
+      const tbody = $("tbody");
+      tbody.innerHTML = "";
+
+      if (data.items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; padding: 40px; color: #94a3b8;">📭 暂无数据</td></tr>`;
+      } else {
+        for (const s of data.items) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td><code>${s.seq_no}</code></td>
+            <td><strong>${s.name ?? ""}</strong></td>
+            <td>${s.gender ?? ""}</td>
+            <td>${s.grade_stage ?? ""}</td>
+            <td>${s.mode ?? ""}</td>
+            <td>${s.subj1 ?? ""}</td>
+            <td>${s.subj2 ?? ""}</td>
+            <td>${s.subj3 ?? ""}</td>
+            <td>${s.is_priority ? '<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 20px;">优先</span>' : '普通'}</td>
+            <td>${s.social_worker_name ?? ""}</td>
+            <td>${s.social_worker_phone ?? ""}</td>
+          `;
+          tbody.appendChild(tr);
+        }
+      }
+
+      setStatus(`已加载 ${data.items.length} 条`, true);
+      log("✅ 列表加载成功", { total, returned: data.items.length });
+
+    } catch (error) {
+      setStatus("请求失败", false);
+      log("❌ 网络错误", { message: error.message });
     }
-
-    total = data.total;
-    $("totalLabel").textContent = String(total);
-    $("offsetLabel").textContent = String(offset);
-
-    const tbody = $("tbody");
-    tbody.innerHTML = "";
-
-    for (const s of data.items) {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${s.seq_no}</td>
-        <td>${s.name ?? ""}</td>
-        <td>${s.gender ?? ""}</td>
-        <td>${s.grade_stage ?? ""}</td>
-        <td>${s.mode ?? ""}</td>
-        <td>${s.subj1 ?? ""}</td>
-        <td>${s.subj2 ?? ""}</td>
-        <td>${s.subj3 ?? ""}</td>
-        <td>${s.is_priority ? "1" : "0"}</td>
-        <td>${s.social_worker_name ?? ""}</td>
-        <td>${s.social_worker_phone ?? ""}</td>
-      `;
-      tbody.appendChild(tr);
-    }
-
-    setStatus("列表已更新", true);
   }
 
   // ====== 导入 preview ======
   $("btnPreview").addEventListener("click", async () => {
-    const file = $("fileInput").files[0];
-    if (!file) { alert("请先选择 Excel 文件"); return; }
+    const fileInput = $("fileInput");
+    const file = fileInput.files[0];
+    if (!file) { 
+      alert("请先选择 Excel 文件");
+      $("fileUpload").style.borderColor = "#ef4444";
+      setTimeout(() => $("fileUpload").style.borderColor = "", 1000);
+      return; 
+    }
 
     const strict = $("strictSel").value;
 
@@ -239,59 +745,100 @@
     form.append("file", file);
 
     const url = `${BASE}/api/students/import/preview?strict=${encodeURIComponent(strict)}&max_preview_rows=50`;
-    log("POST " + url);
+    log("📤 预览请求", { file: file.name, size: file.size, strict });
 
-    const res = await fetch(url, { method: "POST", body: form });
-    const data = await res.json();
+    try {
+      const res = await fetch(url, { method: "POST", body: form });
+      const data = await res.json();
 
-    if (!res.ok) {
-      setStatus("Preview 失败", false);
-      $("previewBox").innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
-      log("ERROR", data);
-      return;
+      if (!res.ok) {
+        setStatus("预览失败", false);
+        $("previewBox").innerHTML = `<pre style="color: #f87171;">${JSON.stringify(data, null, 2)}</pre>`;
+        log("❌ 预览失败", data);
+        return;
+      }
+
+      currentJobId = data.job_id;
+      $("jobId").textContent = currentJobId;
+      $("btnCommit").disabled = false;
+      setStatus("预览成功", true);
+
+      // 显示 stats + error_summary + preview
+      const stats = data.stats || {};
+      const summary = data.error_summary || [];
+      const preview = data.preview || [];
+
+      const errorColor = stats.error_rows > 0 ? '#f87171' : '#4ade80';
+      
+      $("previewBox").innerHTML = `
+        <div style="display: flex; gap: 24px; margin-bottom: 16px; padding: 12px; background: #334155; border-radius: 12px;">
+          <div><span style="color: #94a3b8;">总行数:</span> <span style="color: white; font-weight: 600;">${stats.total_rows}</span></div>
+          <div><span style="color: #94a3b8;">有效:</span> <span style="color: #4ade80; font-weight: 600;">${stats.valid_rows}</span></div>
+          <div><span style="color: #94a3b8;">错误:</span> <span style="color: ${errorColor}; font-weight: 600;">${stats.error_rows}</span></div>
+        </div>
+        ${summary.length > 0 ? `<div style="margin-bottom: 12px;"><span style="color: #f87171;">错误汇总:</span><pre style="color: #f87171;">${JSON.stringify(summary, null, 2)}</pre></div>` : ''}
+        <div><span style="color: #94a3b8;">预览前5行:</span></div>
+        <pre style="color: #e2e8f0;">${JSON.stringify(preview.slice(0, 5), null, 2)}</pre>
+      `;
+      
+      log("✅ 预览成功", { job_id: currentJobId, stats });
+
+    } catch (error) {
+      setStatus("网络错误", false);
+      log("❌ 预览网络错误", { message: error.message });
+      $("previewBox").innerHTML = `<pre style="color: #f87171;">网络请求失败: ${error.message}</pre>`;
     }
-
-    currentJobId = data.job_id;
-    $("jobId").textContent = currentJobId;
-    $("btnCommit").disabled = false;
-    setStatus("Preview 成功", true);
-
-    // 显示 stats + error_summary + preview 前几行
-    const stats = data.stats || {};
-    const summary = data.error_summary || [];
-    const preview = data.preview || [];
-
-    $("previewBox").innerHTML = `
-      <div>总行数：<b>${stats.total_rows}</b>，有效：<b>${stats.valid_rows}</b>，错误：<b class="${stats.error_rows>0?'bad':'ok'}">${stats.error_rows}</b></div>
-      <div style="margin-top:8px;">错误汇总：</div>
-      <pre>${JSON.stringify(summary, null, 2)}</pre>
-      <div>前几行预览：</div>
-      <pre>${JSON.stringify(preview.slice(0, 5), null, 2)}</pre>
-    `;
   });
 
   // ====== commit ======
   $("btnCommit").addEventListener("click", async () => {
     if (!currentJobId) { alert("请先 preview"); return; }
     const url = `${BASE}/api/students/import/${encodeURIComponent(currentJobId)}/commit`;
-    log("POST " + url);
+    log("📤 提交请求", { job_id: currentJobId });
 
-    const res = await fetch(url, { method: "POST" });
-    const data = await res.json();
+    try {
+      const res = await fetch(url, { method: "POST" });
+      const data = await res.json();
 
-    if (!res.ok) {
-      setStatus("Commit 失败", false);
-      log("ERROR", data);
-      alert("Commit 失败：\n" + JSON.stringify(data, null, 2));
-      return;
+      if (!res.ok) {
+        setStatus("提交失败", false);
+        log("❌ 提交失败", data);
+        
+        // 显示友好的错误信息
+        let errorMsg = "提交失败：\n";
+        if (data.detail) {
+          if (typeof data.detail === 'object') {
+            errorMsg += JSON.stringify(data.detail, null, 2);
+          } else {
+            errorMsg += data.detail;
+          }
+        } else {
+          errorMsg += JSON.stringify(data, null, 2);
+        }
+        alert(errorMsg);
+        return;
+      }
+
+      setStatus("提交成功", true);
+      log("✅ 提交成功", data);
+      
+      // 显示成功信息
+      const message = data.message || `成功导入 ${data.inserted || 0} 条数据`;
+      alert(`✅ ${message}`);
+      
+      // 自动刷新列表
+      offset = 0;
+      await loadStudents();
+      
+      // 清空文件选择
+      $("fileInput").value = "";
+      $("btnCommit").disabled = true;
+      
+    } catch (error) {
+      setStatus("网络错误", false);
+      log("❌ 提交网络错误", { message: error.message });
+      alert(`网络请求失败: ${error.message}`);
     }
-
-    setStatus("Commit 成功", true);
-    log("COMMIT OK", data);
-    alert("Commit 成功，插入 " + data.inserted + " 条");
-    // 自动刷新列表
-    offset = 0;
-    await loadStudents();
   });
 
   // ====== 列表按钮 ======
@@ -302,6 +849,7 @@
 
   $("btnPrev").addEventListener("click", async () => {
     const limit = parseInt($("limit").value, 10);
+    if (offset === 0) return;
     offset = Math.max(0, offset - limit);
     await loadStudents();
   });
@@ -313,8 +861,26 @@
     await loadStudents();
   });
 
+  // 文件上传区域点击
+  const fileUpload = document.querySelector('.file-upload');
+  if (fileUpload) {
+    fileUpload.addEventListener('click', () => document.getElementById('fileInput').click());
+  }
+
+  // 文件选择后显示文件名
+  $("fileInput").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const label = document.querySelector('.file-upload-text');
+      if (label) {
+        label.textContent = `📄 ${file.name}`;
+        label.style.color = '#059669';
+      }
+    }
+  });
+
   // 初次加载
-  loadStudents().catch(e => log("INIT ERROR", {message: e.message}));
+  loadStudents().catch(e => log("初始化错误", { message: e.message }));
 </script>
 </body>
 </html>

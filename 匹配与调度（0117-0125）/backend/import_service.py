@@ -13,17 +13,22 @@ STUDENT_COLUMNS = [
 ]
 
 VOLUNTEER_COLUMNS = [
-    "seq_no", "name", "gender",
-    "student_no", "email", "department_major",
-    "mode", "match_mode", "gender_requirement",
+    "seq_no", "name", "gender", "student_no", "email", "department_major",
+    "mode", "match_mode", "gender_requirement",  # gender_requirement 保留
     "grade1", "grade2", "grade3",
     "subj1", "subj2", "subj3",
-    "capacity", "teaching_style_text", "participated_before",
+    "capacity", "style_text",  # 改为 style_text 而不是 teaching_style_text
+    "has_participated_before",  # 改为 has_participated_before 而不是 participated_before
 ]
 
-
 def parse_excel_to_rows(file_bytes: bytes) -> Tuple[List[str], List[Dict[str, Any]]]:
-    df = pd.read_excel(file_bytes)
+    """解析Excel文件为行数据 - 修复bytes类型问题"""
+    # 将 bytes 转换为 BytesIO 对象
+    import io
+    file_obj = io.BytesIO(file_bytes)
+    
+    # 使用文件对象读取Excel
+    df = pd.read_excel(file_obj)
     cols = [str(c).strip() for c in df.columns.tolist()]
     df.columns = cols
     rows = df.to_dict(orient="records")
@@ -111,3 +116,56 @@ def preview_volunteers(file_bytes: bytes, strict: bool, max_preview_rows: int = 
         "errors_by_row": errors_by_row,
     }
     return result, None
+
+def parse_excel(file) -> pd.DataFrame:
+    """兼容main.py调用的函数"""
+    df = pd.read_excel(file)
+    # 清理列名
+    df.columns = [str(c).strip() for c in df.columns]
+    return df
+
+def preview_import(df, data_type, max_preview_rows=50):
+    """兼容main.py调用的预览函数"""
+    if data_type == "students":
+        # 将DataFrame转换为bytes
+        import io
+        bytes_io = io.BytesIO()
+        df.to_excel(bytes_io, index=False)
+        bytes_io.seek(0)
+        
+        result, error = preview_students(bytes_io.read(), True, max_preview_rows)
+        if error:
+            return {"fatal_error": error}
+        
+        # 转换为preview_import期望的格式
+        return {
+            "stats": result["stats"],
+            "columns": list(df.columns),
+            "preview": result["preview"],
+            "error_summary": result["error_summary"],
+            "all_rows": [
+                {"data": row, "errors": []} 
+                for row in result["rows_cleaned"]
+            ]
+        }
+    else:
+        # volunteers类似处理
+        import io
+        bytes_io = io.BytesIO()
+        df.to_excel(bytes_io, index=False)
+        bytes_io.seek(0)
+        
+        result, error = preview_volunteers(bytes_io.read(), True, max_preview_rows)
+        if error:
+            return {"fatal_error": error}
+        
+        return {
+            "stats": result["stats"],
+            "columns": list(df.columns),
+            "preview": result["preview"],
+            "error_summary": result["error_summary"],
+            "all_rows": [
+                {"data": row, "errors": []} 
+                for row in result["rows_cleaned"]
+            ]
+        }

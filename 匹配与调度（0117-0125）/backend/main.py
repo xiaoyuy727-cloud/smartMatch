@@ -1,3 +1,10 @@
+import logging
+import traceback
+
+# 配置日志
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
 from fastapi import FastAPI, UploadFile, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func
@@ -13,12 +20,20 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:5500", "http://localhost:5500"],
+    allow_origins=["*"],  # 允许所有来源
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # 允许所有方法
+    allow_headers=["*"],  # 允许所有头
+    expose_headers=["*"],  # 暴露所有头
 )
 
+@app.middleware("http")
+async def add_cors_header(request, call_next):
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    return response
 
 # 启动时建表（MVP）
 Base.metadata.create_all(bind=engine)
@@ -73,12 +88,16 @@ async def students_import_preview(
 
 
 @app.post("/api/students/import/{job_id}/commit")
-async def students_import_commit(job_id: str, db: Session = Depends(get_db)):
+async def students_import_commit(
+    job_id: str,
+    db: Session = Depends(get_db)
+):
+    """提交学生数据 - 重复的不导入，不重复的导入"""
     job = PREVIEW_CACHE.get(job_id)
     if not job:
         raise HTTPException(404, "job not found")
     if job["type"] != "students":
-        raise HTTPException(400, "job type mismatch: this job is not students")
+        raise HTTPException(400, "job type mismatch")
 
     result = job["result"]
     strict = job["strict"]
@@ -86,44 +105,95 @@ async def students_import_commit(job_id: str, db: Session = Depends(get_db)):
     if strict and result["stats"]["error_rows"] > 0:
         raise HTTPException(status_code=409, detail={
             "code": "VALIDATION_FAILED",
-            "message": "存在硬错误，严格模式下禁止提交",
-            "error_rows": result["stats"]["error_rows"]
+            "message": f"存在 {result['stats']['error_rows']} 行错误，严格模式下禁止提交"
         })
 
-    rows = result["all_rows"]
-    to_insert = [r["data"] for r in rows if len(r["errors"]) == 0]
+    # 从 result 中获取数据
+    if "rows_cleaned" in result:
+        rows_cleaned = result["rows_cleaned"]
+        errors_by_row = result.get("errors_by_row", [])
+    elif "all_rows" in result:
+        all_rows = result["all_rows"]
+        rows_cleaned = [r["data"] for r in all_rows]
+        errors_by_row = [{"row_index": i+2, "errors": r["errors"]} for i, r in enumerate(all_rows) if r["errors"]]
+    else:
+        rows_cleaned = result.get("preview", [])
+        errors_by_row = result.get("error_summary", [])
 
-    # on_conflict = reject（不改）
-    for d in to_insert:
+    error_indices = {e["row_index"] for e in errors_by_row}
+    
+    # 筛选出有效数据
+    valid_rows = []
+    for idx, row in enumerate(rows_cleaned):
+        if (idx + 2) not in error_indices:
+            valid_rows.append(row)
+
+    print(f"找到 {len(valid_rows)} 条有效学生数据")
+
+    # 区分新数据和已存在数据
+    to_insert = []
+    conflicts = []
+    
+    for d in valid_rows:
         exists = db.get(Student, d["seq_no"])
         if exists:
-            raise HTTPException(status_code=409, detail={
-                "code": "PK_CONFLICT",
-                "message": f"students.seq_no={d['seq_no']} 已存在，拒绝导入（reject）"
+            conflicts.append({
+                "seq_no": d["seq_no"],
+                "name": d["name"],
+                "existing_name": exists.name
             })
+            print(f"跳过已存在的学生: {d['seq_no']} - {d['name']}")
+        else:
+            to_insert.append(d)
+            print(f"准备插入新学生: {d['seq_no']} - {d['name']}")
 
-    objs = [
-        Student(
-            seq_no=d["seq_no"],
-            name=d["name"],
-            gender=d["gender"],
-            grade_stage=d["grade_stage"],
-            mode=d["mode"],
-            subj1=d["subj1"], subj2=d["subj2"], subj3=d["subj3"],
-            weakness_text=d.get("weakness_text"),
-            learning_style=d.get("learning_style"),
-            interests_text=d.get("interests_text"),
-            personality_text=d.get("personality_text"),
-            social_worker_name=d["social_worker_name"],
-            social_worker_phone=d["social_worker_phone"],
-            is_priority=bool(d["is_priority"]),
-            special_needs_text=d.get("special_needs_text"),
-        )
-        for d in to_insert
-    ]
-    db.add_all(objs)
-    db.commit()
-    return {"job_id": job_id, "status": "committed", "inserted": len(objs)}
+    # 插入新数据
+    objs = []
+    for d in to_insert:
+        try:
+            obj = Student(
+                seq_no=str(d["seq_no"]),
+                name=d["name"],
+                gender=d["gender"],
+                grade_stage=int(d["grade_stage"]),
+                mode=d["mode"],
+                subj1=str(d.get("subj1", "")),
+                subj2=str(d.get("subj2", "")),
+                subj3=str(d.get("subj3", "")),
+                weakness_text=d.get("weakness_text"),
+                learning_style=d.get("learning_style"),
+                interests_text=d.get("interests_text"),
+                personality_text=d.get("personality_text"),
+                social_worker_name=d.get("social_worker_name"),
+                social_worker_phone=d.get("social_worker_phone"),
+                is_priority=bool(d.get("is_priority", False)),
+                special_needs_text=d.get("special_needs_text"),
+            )
+            objs.append(obj)
+        except Exception as e:
+            print(f"创建学生对象失败: {e}")
+            continue
+    
+    inserted_count = 0
+    if objs:
+        try:
+            db.add_all(objs)
+            db.commit()
+            inserted_count = len(objs)
+            print(f"成功插入 {inserted_count} 条新学生数据")
+        except Exception as e:
+            print(f"数据库插入失败: {e}")
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"数据库插入失败: {str(e)}")
+    
+    return {
+        "job_id": job_id,
+        "status": "committed",
+        "inserted": inserted_count,
+        "skipped": len(conflicts),
+        "total_valid": len(valid_rows),
+        "message": f"成功导入 {inserted_count} 条，跳过 {len(conflicts)} 条已存在的记录"
+    }
 
 # -------------------------------------------------------------------
 # Volunteers Import (split routes)
@@ -157,12 +227,16 @@ async def volunteers_import_preview(
 
 
 @app.post("/api/volunteers/import/{job_id}/commit")
-async def volunteers_import_commit(job_id: str, db: Session = Depends(get_db)):
+async def volunteers_import_commit(
+    job_id: str,
+    db: Session = Depends(get_db)
+):
+    """提交志愿者数据 - 重复的不导入，不重复的导入"""
     job = PREVIEW_CACHE.get(job_id)
     if not job:
         raise HTTPException(404, "job not found")
     if job["type"] != "volunteers":
-        raise HTTPException(400, "job type mismatch: this job is not volunteers")
+        raise HTTPException(400, "job type mismatch")
 
     result = job["result"]
     strict = job["strict"]
@@ -170,44 +244,113 @@ async def volunteers_import_commit(job_id: str, db: Session = Depends(get_db)):
     if strict and result["stats"]["error_rows"] > 0:
         raise HTTPException(status_code=409, detail={
             "code": "VALIDATION_FAILED",
-            "message": "存在硬错误，严格模式下禁止提交",
-            "error_rows": result["stats"]["error_rows"]
+            "message": f"存在 {result['stats']['error_rows']} 行错误，严格模式下禁止提交"
         })
 
-    rows = result["all_rows"]
-    to_insert = [r["data"] for r in rows if len(r["errors"]) == 0]
+    # 从 result 中获取数据
+    if "rows_cleaned" in result:
+        rows_cleaned = result["rows_cleaned"]
+        errors_by_row = result.get("errors_by_row", [])
+    elif "all_rows" in result:
+        all_rows = result["all_rows"]
+        rows_cleaned = [r["data"] for r in all_rows]
+        errors_by_row = [{"row_index": i+2, "errors": r["errors"]} for i, r in enumerate(all_rows) if r["errors"]]
+    elif "preview" in result:
+        rows_cleaned = result["preview"]
+        errors_by_row = result.get("error_summary", [])
+    else:
+        print(f"result 中的键: {result.keys()}")
+        raise HTTPException(status_code=500, detail=f"无法识别的数据结构: {list(result.keys())}")
 
-    # on_conflict = reject（不改）
-    for d in to_insert:
+    error_indices = {e["row_index"] for e in errors_by_row}
+    
+    # 筛选出有效数据（没有错误的行）
+    valid_rows = []
+    for idx, row in enumerate(rows_cleaned):
+        if (idx + 2) not in error_indices:
+            valid_rows.append(row)
+
+    print(f"找到 {len(valid_rows)} 条有效数据")
+
+    # 分别记录：要插入的、冲突的、重复的
+    to_insert = []
+    conflicts = []
+    existing_records = []
+    
+    for d in valid_rows:
         exists = db.get(Volunteer, d["seq_no"])
         if exists:
-            raise HTTPException(status_code=409, detail={
-                "code": "PK_CONFLICT",
-                "message": f"volunteers.seq_no={d['seq_no']} 已存在，拒绝导入（reject）"
+            # 记录冲突信息
+            conflicts.append({
+                "seq_no": d["seq_no"],
+                "name": d["name"],
+                "existing_name": exists.name
             })
+            existing_records.append(d)
+            print(f"跳过已存在的志愿者: {d['seq_no']} - {d['name']}")
+        else:
+            to_insert.append(d)
+            print(f"准备插入新志愿者: {d['seq_no']} - {d['name']}")
 
-    objs = [
-        Volunteer(
-            seq_no=d["seq_no"],
-            name=d["name"],
-            gender=d["gender"],
-            student_no=d["student_no"],
-            email=d["email"],
-            department_major=d["department_major"],
-            mode=d["mode"],
-            match_mode=d["match_mode"],
-            has_participated_before=bool(d["has_participated_before"]),
-            style_text=d.get("style_text"),
-            gender_requirement=d["gender_requirement"],
-            subj1=d["subj1"], subj2=d["subj2"], subj3=d["subj3"],
-            grade1=d["grade1"], grade2=d["grade2"], grade3=d["grade3"],
-            capacity=int(d["capacity"]),
-        )
-        for d in to_insert
-    ]
-    db.add_all(objs)
-    db.commit()
-    return {"job_id": job_id, "status": "committed", "inserted": len(objs)}
+    # 插入不重复的数据
+    objs = []
+    for d in to_insert:
+        try:
+            obj = Volunteer(
+                seq_no=str(d["seq_no"]),
+                name=d["name"],
+                gender=d["gender"],
+                student_no=d.get("student_no"),
+                email=d.get("email"),
+                department_major=d.get("department_major"),
+                mode=d["mode"],
+                match_mode=d["match_mode"],
+                gender_requirement=d.get("gender_requirement", "none"),
+                grade1=int(d.get("grade1", 0) or 0),
+                grade2=int(d.get("grade2", 0) or 0),
+                grade3=int(d.get("grade3", 0) or 0),
+                subj1=str(d.get("subj1", "")),
+                subj2=str(d.get("subj2", "")),
+                subj3=str(d.get("subj3", "")),
+                capacity=int(d.get("capacity", 1) or 1),
+                teaching_style_text=d.get("teaching_style_text", d.get("style_text", "")),
+                participated_before=bool(d.get("participated_before", d.get("has_participated_before", False))),
+            )
+            objs.append(obj)
+            print(f"成功创建志愿者对象: {obj.seq_no}")
+            
+        except Exception as e:
+            print(f"创建志愿者对象失败: {e}")
+            traceback.print_exc()
+            continue
+    
+    # 批量插入
+    inserted_count = 0
+    if objs:
+        try:
+            db.add_all(objs)
+            db.commit()
+            inserted_count = len(objs)
+            print(f"成功插入 {inserted_count} 条新志愿者数据")
+        except Exception as e:
+            print(f"数据库插入失败: {e}")
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"数据库插入失败: {str(e)}")
+    
+    # 返回详细的结果信息
+    return {
+        "job_id": job_id,
+        "status": "committed",
+        "inserted": inserted_count,
+        "skipped": len(conflicts),
+        "total_valid": len(valid_rows),
+        "details": {
+            "inserted": inserted_count,
+            "skipped_count": len(conflicts),
+            "skipped_items": conflicts[:10],  # 只返回前10条冲突记录，避免响应过大
+        },
+        "message": f"成功导入 {inserted_count} 条，跳过 {len(conflicts)} 条已存在的记录"
+    }
 
 # -------------------------------------------------------------------
 # List APIs: pagination + simple filters

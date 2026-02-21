@@ -1,4 +1,5 @@
-from pydantic import BaseModel, Field
+# schemas.py
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 
 
@@ -7,27 +8,33 @@ class ErrorDetail(BaseModel):
     message: str
 
 
-class StudentsListItem(BaseModel):
-    seq_no: int
+class StudentOut(BaseModel):
+    """学生输出模型"""
+    model_config = ConfigDict(from_attributes=True)
+    
+    seq_no: str  # 匹配模型：String
     name: str
     gender: str
     grade_stage: int
     mode: str
-    subj1: int
-    subj2: int
-    subj3: int
+    subj1: str  # 匹配模型：String
+    subj2: str
+    subj3: str
     weakness_text: Optional[str] = None
     learning_style: Optional[str] = None
     interests_text: Optional[str] = None
     personality_text: Optional[str] = None
-    social_worker_name: Optional[str] = None
-    social_worker_phone: Optional[str] = None
+    social_worker_name: Optional[str] = None  # 匹配模型：允许 None
+    social_worker_phone: Optional[str] = None  # 匹配模型：允许 None
     is_priority: bool
     special_needs_text: Optional[str] = None
 
 
-class VolunteersListItem(BaseModel):
-    seq_no: int
+class VolunteerOut(BaseModel):
+    """志愿者输出模型"""
+    model_config = ConfigDict(from_attributes=True)
+    
+    seq_no: str
     name: str
     gender: str
     student_no: Optional[str] = None
@@ -39,9 +46,9 @@ class VolunteersListItem(BaseModel):
     grade1: int
     grade2: int
     grade3: int
-    subj1: int
-    subj2: int
-    subj3: int
+    subj1: str  # 改为 String
+    subj2: str
+    subj3: str
     capacity: int
     teaching_style_text: Optional[str] = None
     participated_before: bool = False

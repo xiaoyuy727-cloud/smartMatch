@@ -1,3 +1,4 @@
+# models.py
 from sqlalchemy import String, Integer, Boolean
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -7,17 +8,18 @@ from database import Base
 class Student(Base):
     __tablename__ = "students"
 
-    # 主键：seq_no（你们确定用第一列）
-    seq_no: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    # 主键：seq_no - 改为 String，因为学号可能包含字母
+    seq_no: Mapped[str] = mapped_column(String(20), primary_key=True, index=True)
 
     name: Mapped[str] = mapped_column(String(64), nullable=False)
     gender: Mapped[str] = mapped_column(String(1), nullable=False)  # M/F
     grade_stage: Mapped[int] = mapped_column(Integer, nullable=False)  # 1/2/3
     mode: Mapped[str] = mapped_column(String(16), nullable=False)  # online/offline/both
 
-    subj1: Mapped[int] = mapped_column(Integer, nullable=False)  # 1..9
-    subj2: Mapped[int] = mapped_column(Integer, nullable=False)
-    subj3: Mapped[int] = mapped_column(Integer, nullable=False)
+    # 科目：虽然存的是数字代码，但用 String 更灵活
+    subj1: Mapped[str] = mapped_column(String(10), nullable=False)  # 改为 String
+    subj2: Mapped[str] = mapped_column(String(10), nullable=False)
+    subj3: Mapped[str] = mapped_column(String(10), nullable=False)
 
     weakness_text: Mapped[str | None] = mapped_column(String(500), nullable=True)
     learning_style: Mapped[str | None] = mapped_column(String(64), nullable=True)
@@ -34,7 +36,7 @@ class Student(Base):
 class Volunteer(Base):
     __tablename__ = "volunteers"
 
-    seq_no: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    seq_no: Mapped[str] = mapped_column(String(20), primary_key=True, index=True)  # 改为 String
 
     name: Mapped[str] = mapped_column(String(64), nullable=False)
     gender: Mapped[str] = mapped_column(String(1), nullable=False)  # M/F
@@ -54,10 +56,10 @@ class Volunteer(Base):
     grade2: Mapped[int] = mapped_column(Integer, nullable=False)
     grade3: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    # 科目偏好三列
-    subj1: Mapped[int] = mapped_column(Integer, nullable=False)  # 1..9
-    subj2: Mapped[int] = mapped_column(Integer, nullable=False)
-    subj3: Mapped[int] = mapped_column(Integer, nullable=False)
+    # 科目偏好三列 - 改为 String
+    subj1: Mapped[str] = mapped_column(String(10), nullable=False)
+    subj2: Mapped[str] = mapped_column(String(10), nullable=False)
+    subj3: Mapped[str] = mapped_column(String(10), nullable=False)
 
     # 容量：可带几个学生（默认 1）
     capacity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
