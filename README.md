@@ -65,3 +65,4 @@ VOLUNTEER_COLUMNS = [
     "capacity", "style_text",  # 改为 style_text 而不是 teaching_style_text
     "has_participated_before",  # 改为 has_participated_before 而不是 participated_before
 ]
+之后下学期我问卷收集也要按这些字段来，否则会报错。
