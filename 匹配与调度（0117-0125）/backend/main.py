@@ -437,3 +437,24 @@ def list_volunteers(
         "limit": limit,
         "items": [VolunteerOut.model_validate(i) for i in items],
     }
+
+# 删除单个志愿者
+@app.delete("/api/volunteers/{seq_no}")
+async def delete_volunteer(seq_no: str, db: Session = Depends(get_db)):
+    volunteer = db.get(Volunteer, seq_no)
+    if not volunteer:
+        raise HTTPException(404, "志愿者不存在")
+    db.delete(volunteer)
+    db.commit()
+    return {"message": "删除成功"}
+
+# 删除单个学生
+@app.delete("/api/students/{seq_no}")
+async def delete_student(seq_no: str, db: Session = Depends(get_db)):
+    student = db.get(Student, seq_no)
+    if not student:
+        raise HTTPException(404, "学生不存在")
+    db.delete(student)
+    db.commit()
+    return {"message": "删除成功"}
+
