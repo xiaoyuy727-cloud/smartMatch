@@ -1,6 +1,7 @@
 import logging
 import traceback
 
+
 from matching_service import preview_topk, run_match_v1
 from matching_orchestrator import run_full_match_v1
 from matching_store import (
@@ -488,15 +489,10 @@ async def delete_student(seq_no: str, db: Session = Depends(get_db)):
 def match_v1_preview(
     db: Session = Depends(get_db),
     topk: int = Query(200, ge=1, le=2000),
-    match_mode: str | None = Query(None, description="direct/pre"),
-    grade_stage: int | None = Query(None, description="仅预览某学段学生 1/2/3"),
+    match_mode: str | None = Query(None),  # direct/pre/None
+    llm_enabled: bool = Query(False, description="是否启用 DeepSeek 主观评分"),
 ):
-    data = preview_topk(
-        db=db,
-        topk=topk,
-        match_mode=match_mode,
-        student_grade_stage=grade_stage,
-    )
+    data = preview_topk(db=db, topk=topk, match_mode=match_mode, llm_enabled=llm_enabled)
 
     out = []
     for c in data["topk"]:
@@ -507,39 +503,60 @@ def match_v1_preview(
             CandidatePairOut(
                 student_seq_no=str(s["seq_no"]),
                 student_name=s["name"],
-                student_is_priority=bool(s["is_priority"]),
+                student_is_priority=bool(s.get("is_priority", False)),
+                student_grade_stage=s.get("grade_stage"),
+                student_mode=s.get("mode"),
+
                 volunteer_seq_no=str(v["seq_no"]),
                 volunteer_name=v["name"],
                 volunteer_match_mode=v["match_mode"],
-                volunteer_capacity=int(v["capacity"]),
+                volunteer_capacity=int(v.get("capacity", 1) or 1),
+                volunteer_mode=v.get("mode"),
+
                 is_legal=True,
                 illegal_reason=None,
-                grade_score=sc["grade_score"],
-                subject_score=sc["subject_score"],
-                style_score=sc["style_score"],
-                base_score=sc["base_score"],
-                special_penalty=sc["special_penalty"],
-                total_score=sc["total_score"],
-                best_subject_raw=sc["best_subject_raw"],
-                best_subject_ids=sc["best_subject_ids"],
-                best_subject_details=sc["best_subject_details"],
+
+                grade_score=float(sc.get("grade_score", 0.0)),
+                subject_score=float(sc.get("subject_score", 0.0)),
+                style_score=float(sc.get("style_score", 0.0)),
+                teaching_style_score=float(sc.get("teaching_style_score", 0.0)),
+                major_match_score=float(sc.get("major_match_score", 0.0)),
+                base_score=float(sc.get("base_score", 0.0)),
+                special_penalty=float(sc.get("special_penalty", 0.0)),
+                total_score=float(sc.get("total_score", 0.0)),
+
+                best_subject_raw=int(sc.get("best_subject_raw", 0)),
+                best_subject_ids=list(sc.get("best_subject_ids", [])),
+                best_subject_details=list(sc.get("best_subject_details", [])),
+
+                llm_status=sc.get("llm_status"),
+                llm_model=sc.get("llm_model"),
+                prompt_version_style=sc.get("prompt_version_style"),
+                prompt_version_major=sc.get("prompt_version_major"),
+                prompt_version_special=sc.get("prompt_version_special"),
+                llm_reason_style=sc.get("llm_reason_style"),
+                llm_reason_major=sc.get("llm_reason_major"),
+                llm_reason_special=sc.get("llm_reason_special"),
+                llm_confidence_style=sc.get("llm_confidence_style"),
+                llm_confidence_major=sc.get("llm_confidence_major"),
+                llm_confidence_special=sc.get("llm_confidence_special"),
             )
         )
 
-    return MatchPreviewOut(total_candidates=data["total_candidates"], topk=out)
+    return MatchPreviewOut(
+        total_candidates=data["total_candidates"],
+        topk=out,
+        stats=data.get("stats"),
+    )
 
 
 @app.post("/api/match/v1/run", response_model=MatchRunOut)
 def match_v1_run(
     db: Session = Depends(get_db),
-    match_mode: str | None = Query(None, description="direct/pre"),
-    grade_stage: int | None = Query(None, description="仅匹配某学段学生 1/2/3"),
+    match_mode: str | None = Query(None),  # direct/pre/None
+    llm_enabled: bool = Query(False, description="是否启用 DeepSeek 主观评分"),
 ):
-    data = run_match_v1(
-        db=db,
-        match_mode=match_mode,
-        student_grade_stage=grade_stage,
-    )
+    data = run_match_v1(db=db, match_mode=match_mode, llm_enabled=llm_enabled)
 
     matches_out = []
     for c in data["matches"]:
@@ -552,15 +569,28 @@ def match_v1_run(
                 student_name=s["name"],
                 volunteer_seq_no=str(v["seq_no"]),
                 volunteer_name=v["name"],
-                total_score=sc["total_score"],
-                base_score=sc["base_score"],
-                grade_score=sc["grade_score"],
-                subject_score=sc["subject_score"],
-                style_score=sc["style_score"],
-                special_penalty=sc["special_penalty"],
-                best_subject_raw=sc["best_subject_raw"],
-                best_subject_ids=sc["best_subject_ids"],
-                best_subject_details=sc["best_subject_details"],
+
+                total_score=float(sc.get("total_score", 0.0)),
+                base_score=float(sc.get("base_score", 0.0)),
+                grade_score=float(sc.get("grade_score", 0.0)),
+                subject_score=float(sc.get("subject_score", 0.0)),
+
+                style_score=float(sc.get("style_score", 0.0)),
+                teaching_style_score=float(sc.get("teaching_style_score", 0.0)),
+                major_match_score=float(sc.get("major_match_score", 0.0)),
+                special_penalty=float(sc.get("special_penalty", 0.0)),
+
+                best_subject_raw=int(sc.get("best_subject_raw", 0)),
+                best_subject_ids=list(sc.get("best_subject_ids", [])),
+                best_subject_details=list(sc.get("best_subject_details", [])),
+
+                llm_status=sc.get("llm_status"),
+                llm_reason_style=sc.get("llm_reason_style"),
+                llm_reason_major=sc.get("llm_reason_major"),
+                llm_reason_special=sc.get("llm_reason_special"),
+                llm_confidence_style=sc.get("llm_confidence_style"),
+                llm_confidence_major=sc.get("llm_confidence_major"),
+                llm_confidence_special=sc.get("llm_confidence_special"),
             )
         )
 
@@ -568,8 +598,8 @@ def match_v1_run(
         matches=matches_out,
         unmatched_students=[str(x) for x in data["unmatched_students"]],
         unmatched_volunteers=[str(x) for x in data["unmatched_volunteers"]],
+        stats=data.get("stats"),
     )
-
 
 # -------------------------------------------------------------------
 # Match APIs (Stage1)
