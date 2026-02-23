@@ -1,6 +1,5 @@
 from __future__ import annotations
 from typing import Dict, List, Tuple, Optional
-from dataclasses import dataclass
 
 # 权重（可调参）
 W_GRADE = 20.0
@@ -16,6 +15,18 @@ GRADE_MULT = {
 }
 
 PREF_WEIGHT = {1: 3, 2: 2, 3: 1}  # rank -> weight
+
+
+def _safe_int(x, default: int = 0) -> int:
+    try:
+        if x is None:
+            return default
+        s = str(x).strip()
+        if not s:
+            return default
+        return int(float(s))
+    except Exception:
+        return default
 
 
 def _mode_compatible(student_mode: str, vol_mode: str) -> bool:
@@ -41,30 +52,35 @@ def is_legal_pair(student: Dict, volunteer: Dict) -> Tuple[bool, Optional[str]]:
 
 
 def grade_score(student: Dict, volunteer: Dict) -> float:
-    gs = student["grade_stage"]
-    ranks = [volunteer["grade1"], volunteer["grade2"], volunteer["grade3"]]
+    gs = _safe_int(student.get("grade_stage"), 0)
+    ranks = [_safe_int(volunteer.get("grade1")), _safe_int(volunteer.get("grade2")), _safe_int(volunteer.get("grade3"))]
     if gs in ranks:
         pos = ranks.index(gs) + 1  # 1/2/3
         return W_GRADE * GRADE_MULT[pos]
     return 0.0
 
 
-def _pref_map_3(a: int, b: int, c: int) -> Dict[int, Tuple[int, int]]:
+def _pref_map_3(a, b, c) -> Dict[int, Tuple[int, int]]:
     """
     返回 {subject_id: (rank, weight)}
     """
+    vals = [_safe_int(a), _safe_int(b), _safe_int(c)]
     m: Dict[int, Tuple[int, int]] = {}
-    m[a] = (1, PREF_WEIGHT[1])
-    m[b] = (2, PREF_WEIGHT[2])
-    m[c] = (3, PREF_WEIGHT[3])
+    for idx, sid in enumerate(vals, start=1):
+        if sid <= 0:
+            continue
+        # 重复时保留更高优先级（更小 rank）
+        if sid in m and m[sid][0] < idx:
+            continue
+        m[sid] = (idx, PREF_WEIGHT[idx])
     return m
 
 
 def subject_score_and_best(student: Dict, volunteer: Dict):
-    s_map = _pref_map_3(student["subj1"], student["subj2"], student["subj3"])
-    v_map = _pref_map_3(volunteer["subj1"], volunteer["subj2"], volunteer["subj3"])
+    s_map = _pref_map_3(student.get("subj1"), student.get("subj2"), student.get("subj3"))
+    v_map = _pref_map_3(volunteer.get("subj1"), volunteer.get("subj2"), volunteer.get("subj3"))
 
-    # 1..9 全部扫一遍（或只扫交集也行，这里扫全更直观）
+    # 1..9 全部扫一遍（如果以后科目编码变化，这里可以改为扫交集）
     best_raw = 0
     per_subj = {}  # subject_id -> detail
     for sid in range(1, 10):
@@ -105,7 +121,6 @@ def style_score(student: Dict, volunteer: Dict) -> float:
 
 def special_penalty(student: Dict, volunteer: Dict) -> float:
     # V1：DeepSeek 占位，先 0（不扣）
-    # 后续可改成：根据 special_needs_text 与志愿者能力不匹配 -> -20 或 0~-20
     return 0.0
 
 
@@ -120,7 +135,7 @@ def score_pair_v1(student: Dict, volunteer: Dict) -> Dict:
             "style_score": 0.0,
             "base_score": 0.0,
             "special_penalty": 0.0,
-            "total_score": -1e9,  # 不参与排序
+            "total_score": -1e9,
             "best_subject_raw": 0,
             "best_subject_ids": [],
             "best_subject_details": [],

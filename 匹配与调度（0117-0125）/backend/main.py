@@ -1,6 +1,24 @@
 import logging
 import traceback
 
+from matching_service import preview_topk, run_match_v1
+from matching_orchestrator import run_full_match_v1
+from matching_store import (
+    list_jobs as list_match_jobs_store,
+    get_job_detail as get_match_job_detail_store,
+    count_jobs as count_match_jobs_store,
+)
+from matching_schemas import (
+    MatchPreviewOut,
+    MatchRunOut,
+    CandidatePairOut,
+    MatchPairOut,
+    RunFullMatchOut,
+    MatchJobsListOut,
+    MatchJobListItemOut,
+    MatchJobDetailOut,
+)
+
 # 配置日志
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -13,6 +31,8 @@ from database import engine, get_db
 from models import Base, Student, Volunteer
 from import_service import parse_excel, preview_import
 from schemas import StudentOut, VolunteerOut
+from matching_service import preview_topk, run_match_v1
+from matching_schemas import MatchPreviewOut, MatchRunOut, CandidatePairOut, MatchPairOut
 
 app = FastAPI(title="Volunteer-Student MVP")
 
@@ -51,6 +71,8 @@ def root():
         "volunteers": "GET /api/volunteers",
         "students_import": "POST /api/students/import/preview",
         "volunteers_import": "POST /api/volunteers/import/preview",
+        "match_preview": "POST /api/match/v1/preview",
+        "match_run": "POST /api/match/v1/run",
     }
 
 def _new_job_id():
@@ -458,3 +480,212 @@ async def delete_student(seq_no: str, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "删除成功"}
 
+# -------------------------------------------------------------------
+# Match APIs (V1) - unified entry in main.py
+# -------------------------------------------------------------------
+
+@app.post("/api/match/v1/preview", response_model=MatchPreviewOut)
+def match_v1_preview(
+    db: Session = Depends(get_db),
+    topk: int = Query(200, ge=1, le=2000),
+    match_mode: str | None = Query(None, description="direct/pre"),
+    grade_stage: int | None = Query(None, description="仅预览某学段学生 1/2/3"),
+):
+    data = preview_topk(
+        db=db,
+        topk=topk,
+        match_mode=match_mode,
+        student_grade_stage=grade_stage,
+    )
+
+    out = []
+    for c in data["topk"]:
+        s = c["student"]
+        v = c["volunteer"]
+        sc = c["score"]
+        out.append(
+            CandidatePairOut(
+                student_seq_no=str(s["seq_no"]),
+                student_name=s["name"],
+                student_is_priority=bool(s["is_priority"]),
+                volunteer_seq_no=str(v["seq_no"]),
+                volunteer_name=v["name"],
+                volunteer_match_mode=v["match_mode"],
+                volunteer_capacity=int(v["capacity"]),
+                is_legal=True,
+                illegal_reason=None,
+                grade_score=sc["grade_score"],
+                subject_score=sc["subject_score"],
+                style_score=sc["style_score"],
+                base_score=sc["base_score"],
+                special_penalty=sc["special_penalty"],
+                total_score=sc["total_score"],
+                best_subject_raw=sc["best_subject_raw"],
+                best_subject_ids=sc["best_subject_ids"],
+                best_subject_details=sc["best_subject_details"],
+            )
+        )
+
+    return MatchPreviewOut(total_candidates=data["total_candidates"], topk=out)
+
+
+@app.post("/api/match/v1/run", response_model=MatchRunOut)
+def match_v1_run(
+    db: Session = Depends(get_db),
+    match_mode: str | None = Query(None, description="direct/pre"),
+    grade_stage: int | None = Query(None, description="仅匹配某学段学生 1/2/3"),
+):
+    data = run_match_v1(
+        db=db,
+        match_mode=match_mode,
+        student_grade_stage=grade_stage,
+    )
+
+    matches_out = []
+    for c in data["matches"]:
+        s = c["student"]
+        v = c["volunteer"]
+        sc = c["score"]
+        matches_out.append(
+            MatchPairOut(
+                student_seq_no=str(s["seq_no"]),
+                student_name=s["name"],
+                volunteer_seq_no=str(v["seq_no"]),
+                volunteer_name=v["name"],
+                total_score=sc["total_score"],
+                base_score=sc["base_score"],
+                grade_score=sc["grade_score"],
+                subject_score=sc["subject_score"],
+                style_score=sc["style_score"],
+                special_penalty=sc["special_penalty"],
+                best_subject_raw=sc["best_subject_raw"],
+                best_subject_ids=sc["best_subject_ids"],
+                best_subject_details=sc["best_subject_details"],
+            )
+        )
+
+    return MatchRunOut(
+        matches=matches_out,
+        unmatched_students=[str(x) for x in data["unmatched_students"]],
+        unmatched_volunteers=[str(x) for x in data["unmatched_volunteers"]],
+    )
+
+
+# -------------------------------------------------------------------
+# Match APIs (Stage1)
+# -------------------------------------------------------------------
+
+def _candidate_to_out(c: dict) -> CandidatePairOut:
+    s = c["student"]
+    v = c["volunteer"]
+    sc = c["score"]
+    return CandidatePairOut(
+        student_seq_no=str(s["seq_no"]),
+        student_name=s["name"],
+        student_is_priority=bool(s.get("is_priority", False)),
+        student_grade_stage=int(s["grade_stage"]) if s.get("grade_stage") is not None else None,
+        student_mode=s.get("mode"),
+        volunteer_seq_no=str(v["seq_no"]),
+        volunteer_name=v["name"],
+        volunteer_match_mode=v.get("match_mode", ""),
+        volunteer_capacity=int(v.get("capacity", 1) or 1),
+        volunteer_mode=v.get("mode"),
+        is_legal=bool(sc.get("is_legal", True)),
+        illegal_reason=sc.get("illegal_reason"),
+        grade_score=float(sc.get("grade_score", 0.0)),
+        subject_score=float(sc.get("subject_score", 0.0)),
+        style_score=float(sc.get("style_score", 0.0)),
+        base_score=float(sc.get("base_score", 0.0)),
+        special_penalty=float(sc.get("special_penalty", 0.0)),
+        total_score=float(sc.get("total_score", 0.0)),
+        best_subject_raw=int(sc.get("best_subject_raw", 0) or 0),
+        best_subject_ids=list(sc.get("best_subject_ids") or []),
+        best_subject_details=list(sc.get("best_subject_details") or []),
+    )
+
+
+def _match_to_out(c: dict) -> MatchPairOut:
+    s = c["student"]
+    v = c["volunteer"]
+    sc = c["score"]
+    return MatchPairOut(
+        student_seq_no=str(s["seq_no"]),
+        student_name=s["name"],
+        volunteer_seq_no=str(v["seq_no"]),
+        volunteer_name=v["name"],
+        stage=c.get("stage"),
+        round_type=c.get("round_type"),
+        match_order=int(c["match_order"]) if c.get("match_order") is not None else None,
+        total_score=float(sc.get("total_score", 0.0)),
+        base_score=float(sc.get("base_score", 0.0)),
+        grade_score=float(sc.get("grade_score", 0.0)),
+        subject_score=float(sc.get("subject_score", 0.0)),
+        style_score=float(sc.get("style_score", 0.0)),
+        special_penalty=float(sc.get("special_penalty", 0.0)),
+        best_subject_raw=int(sc.get("best_subject_raw", 0) or 0),
+        best_subject_ids=list(sc.get("best_subject_ids") or []),
+        best_subject_details=list(sc.get("best_subject_details") or []),
+    )
+
+
+@app.post("/api/match/v1/preview", response_model=MatchPreviewOut)
+def match_v1_preview(
+    db: Session = Depends(get_db),
+    topk: int = Query(200, ge=1, le=2000),
+    match_mode: str | None = Query(None, description="direct/pre"),
+    grade_stage: int | None = Query(None, description="1/2/3"),
+):
+    data = preview_topk(db=db, topk=topk, match_mode=match_mode, student_grade_stage=grade_stage)
+    out = [_candidate_to_out(c) for c in data["topk"]]
+    return MatchPreviewOut(total_candidates=int(data["total_candidates"]), topk=out)
+
+
+@app.post("/api/match/v1/run", response_model=MatchRunOut)
+def match_v1_run(
+    db: Session = Depends(get_db),
+    match_mode: str | None = Query(None, description="direct/pre"),
+    grade_stage: int | None = Query(None, description="1/2/3"),
+):
+    data = run_match_v1(db=db, match_mode=match_mode, student_grade_stage=grade_stage)
+    return MatchRunOut(
+        matches=[_match_to_out(c) for c in data["matches"]],
+        unmatched_students=[str(x) for x in data["unmatched_students"]],
+        unmatched_volunteers=[str(x) for x in data["unmatched_volunteers"]],
+        stats=data.get("stats"),
+    )
+
+
+@app.post("/api/match/v1/run-full", response_model=RunFullMatchOut)
+def match_v1_run_full(
+    db: Session = Depends(get_db),
+    grade_stage: int | None = Query(None, description="1/2/3"),
+):
+    return run_full_match_v1(db=db, grade_stage_filter=grade_stage)
+
+
+@app.get("/api/match/jobs", response_model=MatchJobsListOut)
+def list_match_jobs(
+    db: Session = Depends(get_db),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=200),
+):
+    items = list_match_jobs_store(db=db, offset=offset, limit=limit)
+    return MatchJobsListOut(
+        total=count_match_jobs_store(db),
+        offset=offset,
+        limit=limit,
+        items=[MatchJobListItemOut(**x) for x in items],
+    )
+
+
+@app.get("/api/match/jobs/{job_id}", response_model=MatchJobDetailOut)
+def get_match_job_detail(
+    job_id: int,
+    db: Session = Depends(get_db),
+):
+    data = get_match_job_detail_store(db=db, job_id=job_id)
+    if not data:
+        raise HTTPException(status_code=404, detail="match job not found")
+
+    results = [MatchPairOut(**r) for r in data["results"]]
+    return MatchJobDetailOut(job=data["job"], results=results)

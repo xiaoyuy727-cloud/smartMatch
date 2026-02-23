@@ -3,51 +3,50 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>匹配与调度 V1 - Preview/Run</title>
+  <title>匹配与调度 V1 / Stage1</title>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 24px; }
-    .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
-    .card { border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
-    label { font-size: 13px; color: #444; display:block; margin-bottom: 6px; }
-    input, select, button { padding: 8px 10px; border-radius: 10px; border: 1px solid #ccc; }
-    button { cursor: pointer; }
-    button:disabled { opacity: .5; cursor: not-allowed; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; font-size: 13px; vertical-align: top; }
-    th { background: #fafafa; position: sticky; top: 0; z-index: 1; }
-    .muted { color:#666; font-size: 13px; }
-    .ok { color: #0a7; }
-    .bad { color: #d33; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-    .pill { display:inline-block; padding: 2px 8px; border:1px solid #ddd; border-radius: 999px; font-size: 12px; margin-right: 6px; background:#fff; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 24px; color:#222; }
+    .row { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
+    .card { border:1px solid #ddd; border-radius:12px; padding:16px; margin-bottom:16px; background:#fff; }
     .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    details { border: 1px solid #eee; border-radius: 10px; padding: 10px; background: #fcfcfc; }
-    summary { cursor: pointer; }
-    pre { background: #f7f7f7; padding: 10px; border-radius: 10px; overflow: auto; font-size: 12px; }
-    .small { font-size: 12px; }
+    label { display:block; font-size:13px; color:#444; margin-bottom:6px; }
+    input, select, button { padding:8px 10px; border-radius:10px; border:1px solid #ccc; }
+    button { cursor:pointer; }
+    button:disabled { opacity:.6; cursor:not-allowed; }
+    table { border-collapse: collapse; width:100%; }
+    th, td { border-bottom:1px solid #eee; padding:8px; text-align:left; vertical-align:top; font-size:13px; }
+    th { background:#fafafa; position:sticky; top:0; z-index:1; }
+    .muted { color:#666; font-size:13px; }
+    .small { font-size:12px; }
+    .ok { color:#0a7; }
+    .bad { color:#d33; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .pill { display:inline-block; padding:2px 8px; border:1px solid #ddd; border-radius:999px; font-size:12px; margin-right:6px; }
+    details { border:1px solid #eee; border-radius:10px; padding:10px; background:#fcfcfc; }
+    summary { cursor:pointer; }
+    pre { background:#f7f7f7; padding:10px; border-radius:10px; overflow:auto; font-size:12px; }
+    .btn-primary { background:#111; color:white; border-color:#111; }
+    .btn-accent { background:#0a7; color:white; border-color:#0a7; }
+    .btn-light { background:#f6f6f6; }
   </style>
 </head>
-
 <body>
-  <h2>匹配与调度 V1</h2>
-  <div class="muted">
-    后端地址：<code class="mono" id="baseLabel"></code>
-  </div>
+  <h2>匹配与调度 V1 / Stage1</h2>
+  <div class="muted">后端地址：<code class="mono" id="baseLabel"></code></div>
 
   <div class="card">
     <h3>控制面板</h3>
     <div class="row">
       <div>
-        <label>match_mode（只匹配 direct / pre / all）</label>
+        <label>match_mode（预览/单阶段运行使用）</label>
         <select id="match_mode">
           <option value="">all</option>
           <option value="direct">direct</option>
           <option value="pre">pre</option>
         </select>
       </div>
-
       <div>
-        <label>只匹配学段（可选）</label>
+        <label>学段筛选 grade_stage（可选）</label>
         <select id="grade_stage">
           <option value="">全部</option>
           <option value="1">小学(1)</option>
@@ -55,9 +54,8 @@
           <option value="3">高中(3)</option>
         </select>
       </div>
-
       <div>
-        <label>Top-K 候选对</label>
+        <label>Top-K 候选对（预览）</label>
         <select id="topk">
           <option value="50">50</option>
           <option value="100" selected>100</option>
@@ -66,49 +64,28 @@
         </select>
       </div>
 
-      <div>
-        <label>strict（如果你后端支持；不支持也没关系）</label>
-        <select id="strict">
-          <option value="true" selected>true</option>
-          <option value="false">false</option>
-        </select>
-      </div>
-
-      <div>
-        <button id="btnPreview">Preview 候选对</button>
-      </div>
-
-      <div>
-        <button id="btnRun">Run 生成匹配</button>
-      </div>
-
-      <div class="muted">
-        job_id：<code class="mono" id="jobId">-</code>
-      </div>
-
-      <div class="muted">
-        状态：<span id="status">-</span>
-      </div>
+      <div><button id="btnPreview" class="btn-light">Preview 候选对</button></div>
+      <div><button id="btnRun" class="btn-light">Run 单阶段匹配</button></div>
+      <div><button id="btnRunFull" class="btn-primary">Run Full（Stage1）</button></div>
+      <div><button id="btnRefreshJobs" class="btn-light">刷新任务列表</button></div>
     </div>
 
-    <div class="grid2" style="margin-top: 12px;">
-      <div>
-        <div class="muted small">Preview / Run 统计</div>
-        <div id="statsBox" class="muted">尚未运行</div>
-      </div>
-      <div>
-        <div class="muted small">错误信息（如有）</div>
-        <div id="errBox" class="muted">-</div>
-      </div>
+    <div class="row" style="margin-top:12px;">
+      <div>状态：<span id="status">-</span></div>
+      <div>最近 job_id：<code class="mono" id="jobId">-</code></div>
     </div>
+    <div class="muted small" id="errBox" style="margin-top:8px;">-</div>
   </div>
 
   <div class="card">
-    <h3>候选对 Top-K（按 total_score 降序）</h3>
-    <div class="muted small">
-      说明：subject 取最高分学科；best_subject_ids 可能是多个（并列最高）
-    </div>
-    <div style="margin-top:12px; max-height: 420px; overflow:auto;">
+    <h3>预览/运行统计（即时返回）</h3>
+    <div id="statsBox" class="muted">尚未运行</div>
+  </div>
+
+  <div class="card">
+    <h3>候选对 Top-K（Preview）</h3>
+    <div class="muted small">合法候选对按 total_score 降序。subject 使用最佳学科原始分 raw（0~9）映射到 40 分。</div>
+    <div style="margin-top:12px; max-height:360px; overflow:auto;">
       <table>
         <thead>
           <tr>
@@ -117,10 +94,10 @@
             <th>志愿者</th>
             <th>总分</th>
             <th>基础分</th>
-            <th>年级(20)</th>
-            <th>科目(40)</th>
-            <th>教学风格(40)</th>
-            <th>特殊需求惩罚(0~-20)</th>
+            <th>年级</th>
+            <th>科目</th>
+            <th>风格</th>
+            <th>特殊需求惩罚</th>
             <th>best_subject_ids</th>
             <th>best_subject_details</th>
           </tr>
@@ -131,43 +108,123 @@
   </div>
 
   <div class="card">
-    <h3>最终匹配结果</h3>
-    <div class="muted small">Run 后生成（考虑 capacity & priority 两遍贪心）</div>
-
-    <div style="margin-top:10px;" class="row">
+    <h3>单阶段运行结果（/api/match/v1/run）</h3>
+    <div class="row" style="margin-top:10px;">
       <div class="pill">matches：<b id="matchCount">0</b></div>
       <div class="pill">未匹配学生：<b id="unmatchedStuCount">0</b></div>
       <div class="pill">未匹配志愿者：<b id="unmatchedVolCount">0</b></div>
     </div>
-
-    <div style="margin-top:12px; max-height: 420px; overflow:auto;">
+    <div style="margin-top:12px; max-height:360px; overflow:auto;">
       <table>
         <thead>
           <tr>
             <th>#</th>
             <th>学生</th>
             <th>志愿者</th>
+            <th>stage</th>
+            <th>round</th>
             <th>总分</th>
             <th>基础分</th>
-            <th>年级(20)</th>
-            <th>科目(40)</th>
+            <th>年级</th>
+            <th>科目</th>
             <th>best_subject_ids</th>
-            <th>best_subject_details</th>
           </tr>
         </thead>
         <tbody id="matchTbody"></tbody>
       </table>
     </div>
-
-    <div style="margin-top:12px;" class="grid2">
+    <div class="grid2" style="margin-top:12px;">
       <details>
-        <summary>未匹配学生（展开查看）</summary>
+        <summary>未匹配学生</summary>
         <pre id="unmatchedStuBox">[]</pre>
       </details>
       <details>
-        <summary>未匹配志愿者（展开查看）</summary>
+        <summary>未匹配志愿者</summary>
         <pre id="unmatchedVolBox">[]</pre>
       </details>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Stage1 完整匹配结果摘要（/api/match/v1/run-full）</h3>
+    <div class="muted small">执行 direct 阶段后，用剩余学生进入 pre 阶段；最终结果入库为 match_jobs / match_results。</div>
+    <div class="row" style="margin-top:10px;">
+      <div class="pill">总匹配数：<b id="fullTotalMatches">0</b></div>
+      <div class="pill">未匹配学生：<b id="fullUnmatchedStu">0</b></div>
+      <div class="pill">未匹配志愿者：<b id="fullUnmatchedVol">0</b></div>
+    </div>
+    <div class="grid2" style="margin-top:12px;">
+      <details open>
+        <summary>summary（展开查看）</summary>
+        <pre id="fullSummaryBox">{}</pre>
+      </details>
+      <details>
+        <summary>当前任务明细（可在下方历史任务列表重新打开）</summary>
+        <pre id="fullQuickInfo">尚未执行 Run Full</pre>
+      </details>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>匹配任务历史（match_jobs）</h3>
+    <div style="margin-top:12px; max-height:320px; overflow:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>job_id</th>
+            <th>状态</th>
+            <th>算法版本</th>
+            <th>学段筛选</th>
+            <th>总匹配数</th>
+            <th>未匹配学生</th>
+            <th>未匹配志愿者</th>
+            <th>创建时间</th>
+            <th>完成时间</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="jobsTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>任务详情（match_results）</h3>
+    <div class="row">
+      <div class="pill">当前详情 job：<b id="detailJobId">-</b></div>
+      <div><button id="btnExportCurrentJobCsv" class="btn-accent">导出当前任务CSV（前端）</button></div>
+    </div>
+    <div class="grid2" style="margin-top:12px;">
+      <details open>
+        <summary>任务 summary / params / error</summary>
+        <pre id="jobDetailMetaBox">{}</pre>
+      </details>
+      <details>
+        <summary>任务结果统计（前端重算）</summary>
+        <pre id="jobDetailStatsBox">{}</pre>
+      </details>
+    </div>
+
+    <div style="margin-top:12px; max-height:420px; overflow:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>stage</th>
+            <th>round</th>
+            <th>order</th>
+            <th>学生</th>
+            <th>志愿者</th>
+            <th>总分</th>
+            <th>基础分</th>
+            <th>年级</th>
+            <th>科目</th>
+            <th>best_subject_ids</th>
+            <th>best_subject_details</th>
+          </tr>
+        </thead>
+        <tbody id="jobDetailTbody"></tbody>
+      </table>
     </div>
   </div>
 
@@ -177,247 +234,413 @@
   </div>
 
 <script>
-  // ===== 配置 =====
-  const BASE = "http://127.0.0.1:8000";
-  document.getElementById("baseLabel").textContent = BASE;
+const BASE = "http://127.0.0.1:8000";
+document.getElementById("baseLabel").textContent = BASE;
 
-  // ===== 小工具 =====
-  const $ = (id) => document.getElementById(id);
+const $ = (id) => document.getElementById(id);
+let currentJobId = null;
+let currentJobDetail = null;
 
-  function log(msg, obj) {
-    const el = $("log");
-    el.textContent = msg + (obj ? "\n" + JSON.stringify(obj, null, 2) : "") + "\n\n" + el.textContent;
-  }
+function log(msg, obj) {
+  const el = $("log");
+  el.textContent = msg + (obj ? "\\n" + JSON.stringify(obj, null, 2) : "") + "\\n\\n" + el.textContent;
+}
+function setStatus(text, ok=true) {
+  const el = $("status");
+  el.textContent = text;
+  el.className = ok ? "ok" : "bad";
+}
+function setErr(objOrText) {
+  if (!objOrText) { $("errBox").textContent = "-"; return; }
+  if (typeof objOrText === "string") { $("errBox").textContent = objOrText; return; }
+  $("errBox").innerHTML = `<pre>${escapeHtml(JSON.stringify(objOrText, null, 2))}</pre>`;
+}
+function escapeHtml(s) {
+  return String(s)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+function fmt(x) {
+  if (x === null || x === undefined || x === "") return "";
+  const n = Number(x);
+  if (Number.isNaN(n)) return String(x);
+  return (Math.round(n * 100) / 100).toFixed(2).replace(/\\.00$/, "");
+}
+async function fetchJson(url, opts) {
+  const res = await fetch(url, opts);
+  const text = await res.text();
+  let data = null;
+  try { data = JSON.parse(text); } catch { data = { raw: text }; }
+  return { ok: res.ok, status: res.status, data };
+}
+function qsForPreviewOrRun() {
+  const params = new URLSearchParams();
+  const matchMode = $("match_mode").value;
+  const gradeStage = $("grade_stage").value;
+  const topk = $("topk").value;
+  if (matchMode) params.set("match_mode", matchMode);
+  if (gradeStage) params.set("grade_stage", gradeStage);
+  if (topk) params.set("topk", topk);
+  return params;
+}
+function qsForFullRun() {
+  const params = new URLSearchParams();
+  const gradeStage = $("grade_stage").value;
+  if (gradeStage) params.set("grade_stage", gradeStage);
+  return params;
+}
+function bestDetailsToText(details) {
+  const arr = Array.isArray(details) ? details : [];
+  return arr.map(d => {
+    const sid = d.subject_id ?? d.subject ?? d.subjectId;
+    const sr = d.student_rank ?? d.student_pref_rank ?? d.studentRank;
+    const sw = d.student_weight ?? d.studentWeight;
+    const tr = d.teacher_rank ?? d.teacher_pref_rank ?? d.teacherRank;
+    const tw = d.teacher_weight ?? d.teacherWeight;
+    const prod = d.product ?? d.raw ?? d.score;
+    return `subj=${sid} (S:${sr}/${sw}) (T:${tr}/${tw}) prod=${prod}`;
+  }).join("; ");
+}
 
-  function setStatus(text, ok=true) {
-    const el = $("status");
-    el.textContent = text;
-    el.className = ok ? "ok" : "bad";
-  }
+function renderCandidateTable(candidates) {
+  const tb = $("candTbody");
+  tb.innerHTML = "";
+  (candidates || []).forEach((c, idx) => {
+    const bestIds = c.best_subject_ids || [];
+    const detailsStr = bestDetailsToText(c.best_subject_details || []);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${idx + 1}</td>
+      <td>
+        <div><b>${escapeHtml(c.student_name ?? "")}</b></div>
+        <div class="muted small mono">seq_no=${escapeHtml(c.student_seq_no ?? "")}</div>
+        <div class="muted small">priority=${c.student_is_priority ? "Y" : "N"} grade=${c.student_grade_stage ?? ""} mode=${escapeHtml(c.student_mode ?? "")}</div>
+      </td>
+      <td>
+        <div><b>${escapeHtml(c.volunteer_name ?? "")}</b></div>
+        <div class="muted small mono">seq_no=${escapeHtml(c.volunteer_seq_no ?? "")}</div>
+        <div class="muted small">match_mode=${escapeHtml(c.volunteer_match_mode ?? "")} mode=${escapeHtml(c.volunteer_mode ?? "")} cap=${c.volunteer_capacity ?? ""}</div>
+      </td>
+      <td><b>${fmt(c.total_score)}</b></td>
+      <td>${fmt(c.base_score)}</td>
+      <td>${fmt(c.grade_score)}</td>
+      <td>${fmt(c.subject_score)} <span class="muted small">raw=${fmt(c.best_subject_raw)}</span></td>
+      <td>${fmt(c.style_score)}</td>
+      <td>${fmt(c.special_penalty)}</td>
+      <td class="mono">${escapeHtml(JSON.stringify(bestIds))}</td>
+      <td class="small">${escapeHtml(detailsStr)}</td>
+    `;
+    tb.appendChild(tr);
+  });
+}
 
-  function setErr(objOrText) {
-    if (!objOrText) { $("errBox").textContent = "-"; return; }
-    if (typeof objOrText === "string") { $("errBox").textContent = objOrText; return; }
-    $("errBox").innerHTML = `<pre>${escapeHtml(JSON.stringify(objOrText, null, 2))}</pre>`;
-  }
+function renderMatchTable(matches) {
+  const tb = $("matchTbody");
+  tb.innerHTML = "";
+  (matches || []).forEach((m, idx) => {
+    const bestIds = m.best_subject_ids || [];
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${idx + 1}</td>
+      <td><b>${escapeHtml(m.student_name ?? "")}</b><div class="muted small mono">${escapeHtml(m.student_seq_no ?? "")}</div></td>
+      <td><b>${escapeHtml(m.volunteer_name ?? "")}</b><div class="muted small mono">${escapeHtml(m.volunteer_seq_no ?? "")}</div></td>
+      <td>${escapeHtml(m.stage ?? "-")}</td>
+      <td>${escapeHtml(m.round_type ?? "-")}</td>
+      <td><b>${fmt(m.total_score)}</b></td>
+      <td>${fmt(m.base_score)}</td>
+      <td>${fmt(m.grade_score)}</td>
+      <td>${fmt(m.subject_score)} <span class="muted small">raw=${fmt(m.best_subject_raw)}</span></td>
+      <td class="mono">${escapeHtml(JSON.stringify(bestIds))}</td>
+    `;
+    tb.appendChild(tr);
+  });
+}
 
-  function escapeHtml(s) {
-    return String(s)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-  }
-
-  async function fetchJson(url, opts) {
-    const res = await fetch(url, opts);
-    const text = await res.text();
-    let data = null;
-    try { data = JSON.parse(text); } catch { data = { raw: text }; }
-    return { ok: res.ok, status: res.status, data };
-  }
-
-  function qsFromControls() {
-    const params = new URLSearchParams();
-    const matchMode = $("match_mode").value;
-    const gradeStage = $("grade_stage").value;
-    const topk = $("topk").value;
-    const strict = $("strict").value;
-
-    if (matchMode) params.set("match_mode", matchMode);
-    if (gradeStage) params.set("grade_stage", gradeStage);
-    if (topk) params.set("topk", topk);
-    if (strict) params.set("strict", strict);
-
-    return params;
-  }
-
-  function renderCandidateTable(candidates) {
-    const tb = $("candTbody");
-    tb.innerHTML = "";
-    (candidates || []).forEach((c, idx) => {
-      const bestIds = c.best_subject_ids || (c.best_subject_id ? [c.best_subject_id] : []);
-      const details = c.best_subject_details || c.best_subject_detail || [];
-      const detailsStr = Array.isArray(details) ? details.map(d => {
-        const sid = d.subject_id ?? d.subject ?? d.subjectId;
-        const sr = d.student_rank ?? d.student_pref_rank ?? d.studentRank;
-        const sw = d.student_weight ?? d.studentWeight;
-        const tr = d.teacher_rank ?? d.teacher_pref_rank ?? d.teacherRank;
-        const tw = d.teacher_weight ?? d.teacherWeight;
-        const prod = d.product ?? d.raw ?? d.score;
-        return `subj=${sid} (S:${sr}/${sw}) (T:${tr}/${tw}) prod=${prod}`;
-      }).join("; ") : JSON.stringify(details);
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${idx + 1}</td>
-        <td>
-          <div><b>${escapeHtml(c.student_name ?? "")}</b></div>
-          <div class="muted small mono">seq_no=${c.student_seq_no ?? ""}</div>
-          <div class="muted small">grade=${c.student_grade_stage ?? ""} mode=${escapeHtml(c.student_mode ?? "")}</div>
-        </td>
-        <td>
-          <div><b>${escapeHtml(c.volunteer_name ?? "")}</b></div>
-          <div class="muted small mono">seq_no=${c.volunteer_seq_no ?? ""}</div>
-          <div class="muted small">mode=${escapeHtml(c.volunteer_mode ?? "")} cap=${c.volunteer_capacity ?? ""}</div>
-        </td>
-        <td><b>${fmt(c.total_score)}</b></td>
-        <td>${fmt(c.base_score)}</td>
-        <td>${fmt(c.grade_score)} <span class="muted small">(${escapeHtml(c.grade_hit ?? "")})</span></td>
-        <td>${fmt(c.subject_score)} <span class="muted small">raw=${fmt(c.best_subject_raw)}</span></td>
-        <td>${fmt(c.style_score)}</td>
-        <td>${fmt(c.special_penalty)}</td>
-        <td class="mono">${escapeHtml(JSON.stringify(bestIds))}</td>
-        <td class="small">${escapeHtml(detailsStr)}</td>
-      `;
-      tb.appendChild(tr);
-    });
-  }
-
-  function renderMatchTable(matches) {
-    const tb = $("matchTbody");
-    tb.innerHTML = "";
-    (matches || []).forEach((m, idx) => {
-      const bestIds = m.best_subject_ids || (m.best_subject_id ? [m.best_subject_id] : []);
-      const details = m.best_subject_details || m.best_subject_detail || [];
-      const detailsStr = Array.isArray(details) ? details.map(d => {
-        const sid = d.subject_id ?? d.subject ?? d.subjectId;
-        const sr = d.student_rank ?? d.student_pref_rank ?? d.studentRank;
-        const sw = d.student_weight ?? d.studentWeight;
-        const tr = d.teacher_rank ?? d.teacher_pref_rank ?? d.teacherRank;
-        const tw = d.teacher_weight ?? d.teacherWeight;
-        const prod = d.product ?? d.raw ?? d.score;
-        return `subj=${sid} (S:${sr}/${sw}) (T:${tr}/${tw}) prod=${prod}`;
-      }).join("; ") : JSON.stringify(details);
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${idx + 1}</td>
-        <td>
-          <div><b>${escapeHtml(m.student_name ?? "")}</b></div>
-          <div class="muted small mono">seq_no=${m.student_seq_no ?? ""}</div>
-        </td>
-        <td>
-          <div><b>${escapeHtml(m.volunteer_name ?? "")}</b></div>
-          <div class="muted small mono">seq_no=${m.volunteer_seq_no ?? ""}</div>
-        </td>
-        <td><b>${fmt(m.total_score)}</b></td>
-        <td>${fmt(m.base_score)}</td>
-        <td>${fmt(m.grade_score)} <span class="muted small">(${escapeHtml(m.grade_hit ?? "")})</span></td>
-        <td>${fmt(m.subject_score)} <span class="muted small">raw=${fmt(m.best_subject_raw)}</span></td>
-        <td class="mono">${escapeHtml(JSON.stringify(bestIds))}</td>
-        <td class="small">${escapeHtml(detailsStr)}</td>
-      `;
-      tb.appendChild(tr);
-    });
-  }
-
-  function fmt(x) {
-    if (x === null || x === undefined || x === "") return "";
-    const n = Number(x);
-    if (Number.isNaN(n)) return String(x);
-    return (Math.round(n * 100) / 100).toFixed(2).replace(/\.00$/, "");
-  }
-
-  // ===== 状态 =====
-  let currentJobId = null;
-
-  // ===== Preview =====
-  $("btnPreview").addEventListener("click", async () => {
-    setErr(null);
-    setStatus("Preview 运行中...", true);
-    $("jobId").textContent = "-";
-    currentJobId = null;
-
-    const params = qsFromControls();
-    const url = `${BASE}/api/match/v1/preview?${params.toString()}`;
-
-    log("POST " + url);
-
-    const { ok, status, data } = await fetchJson(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}) // 预留：后续你想传权重/开关都可以放这里
-    });
-
-    if (!ok) {
-      setStatus(`Preview 失败（${status}）`, false);
-      setErr(data);
-      log("ERROR", data);
-      return;
-    }
-
-    // 兼容不同后端字段命名
-    currentJobId = data.job_id || data.match_job_id || data.id || null;
-    $("jobId").textContent = currentJobId ?? "-";
-
-    const candidates = data.candidates || data.topk || data.preview || data.items || [];
-    renderCandidateTable(candidates);
-
-    const stats = data.stats || {
-      total_candidates: data.total_candidates,
-      returned: candidates.length
-    };
-    $("statsBox").innerHTML = `<pre>${escapeHtml(JSON.stringify(stats, null, 2))}</pre>`;
-
-    setStatus("Preview 成功", true);
-    log("PREVIEW OK", data);
+function renderJobsTable(items) {
+  const tb = $("jobsTbody");
+  tb.innerHTML = "";
+  (items || []).forEach((j) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="mono">${j.id}</td>
+      <td>${escapeHtml(j.status ?? "")}</td>
+      <td class="small">${escapeHtml(j.algorithm_version ?? "")}</td>
+      <td>${j.grade_stage_filter ?? "-"}</td>
+      <td>${j.total_matches ?? 0}</td>
+      <td>${j.unmatched_students_count ?? 0}</td>
+      <td>${j.unmatched_volunteers_count ?? 0}</td>
+      <td class="small mono">${escapeHtml(j.created_at ?? "")}</td>
+      <td class="small mono">${escapeHtml(j.finished_at ?? "")}</td>
+      <td><button class="btn-light" data-jobid="${j.id}">查看详情</button></td>
+    `;
+    tb.appendChild(tr);
   });
 
-  // ===== Run =====
-  $("btnRun").addEventListener("click", async () => {
-    setErr(null);
-    setStatus("Run 运行中...", true);
+  tb.querySelectorAll("button[data-jobid]").forEach(btn => {
+    btn.addEventListener("click", () => loadJobDetail(Number(btn.dataset.jobid)));
+  });
+}
 
-    const params = qsFromControls();
-    const url = `${BASE}/api/match/v1/run?${params.toString()}`;
+function renderJobDetail(data) {
+  currentJobDetail = data || null;
+  const job = data?.job || {};
+  const results = data?.results || [];
+  $("detailJobId").textContent = job.id ?? "-";
+  $("jobDetailMetaBox").textContent = JSON.stringify(job, null, 2);
 
-    log("POST " + url);
-
-    const { ok, status, data } = await fetchJson(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        // 如果你后端支持从 preview job 复用候选集，可把 job_id 传过去
-        job_id: currentJobId
-      })
-    });
-
-    if (!ok) {
-      setStatus(`Run 失败（${status}）`, false);
-      setErr(data);
-      log("ERROR", data);
-      return;
-    }
-
-    // 结果字段兼容
-    const matches = data.matches || data.pairs || data.result || [];
-    const unmatchedStudents = data.unmatched_students || data.unmatchedStudents || [];
-    const unmatchedVolunteers = data.unmatched_volunteers || data.unmatchedVolunteers || [];
-
-    $("matchCount").textContent = String(matches.length);
-    $("unmatchedStuCount").textContent = String(unmatchedStudents.length);
-    $("unmatchedVolCount").textContent = String(unmatchedVolunteers.length);
-
-    renderMatchTable(matches);
-    $("unmatchedStuBox").textContent = JSON.stringify(unmatchedStudents, null, 2);
-    $("unmatchedVolBox").textContent = JSON.stringify(unmatchedVolunteers, null, 2);
-
-    const stats = data.stats || {
-      matches: matches.length,
-      unmatched_students: unmatchedStudents.length,
-      unmatched_volunteers: unmatchedVolunteers.length
-    };
-    $("statsBox").innerHTML = `<pre>${escapeHtml(JSON.stringify(stats, null, 2))}</pre>`;
-
-    setStatus("Run 成功", true);
-    log("RUN OK", data);
+  const tb = $("jobDetailTbody");
+  tb.innerHTML = "";
+  results.forEach((r, idx) => {
+    const detailsStr = bestDetailsToText(r.best_subject_details || []);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${idx + 1}</td>
+      <td>${escapeHtml(r.stage ?? "")}</td>
+      <td>${escapeHtml(r.round_type ?? "")}</td>
+      <td>${r.match_order ?? ""}</td>
+      <td><b>${escapeHtml(r.student_name ?? "")}</b><div class="muted small mono">${escapeHtml(r.student_seq_no ?? "")}</div></td>
+      <td><b>${escapeHtml(r.volunteer_name ?? "")}</b><div class="muted small mono">${escapeHtml(r.volunteer_seq_no ?? "")}</div></td>
+      <td><b>${fmt(r.total_score)}</b></td>
+      <td>${fmt(r.base_score)}</td>
+      <td>${fmt(r.grade_score)}</td>
+      <td>${fmt(r.subject_score)} <span class="muted small">raw=${fmt(r.best_subject_raw)}</span></td>
+      <td class="mono">${escapeHtml(JSON.stringify(r.best_subject_ids || []))}</td>
+      <td class="small">${escapeHtml(detailsStr)}</td>
+    `;
+    tb.appendChild(tr);
   });
 
-  // 初始提示
-  setStatus("等待操作", true);
+  const recomputed = {
+    results_count: results.length,
+    direct_count: results.filter(x => x.stage === "direct").length,
+    pre_count: results.filter(x => x.stage === "pre").length,
+    priority_count: results.filter(x => x.round_type === "priority").length,
+    normal_count: results.filter(x => x.round_type === "normal").length,
+  };
+  $("jobDetailStatsBox").textContent = JSON.stringify(recomputed, null, 2);
+}
+
+function setStatsBox(obj) {
+  $("statsBox").innerHTML = `<pre>${escapeHtml(JSON.stringify(obj ?? {}, null, 2))}</pre>`;
+}
+
+async function previewCandidates() {
+  setErr(null);
+  setStatus("Preview 运行中...", true);
+  const params = qsForPreviewOrRun();
+  const url = `${BASE}/api/match/v1/preview?${params.toString()}`;
+  log("POST " + url);
+
+  const { ok, status, data } = await fetchJson(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}",
+  });
+
+  if (!ok) {
+    setStatus(`Preview 失败（${status}）`, false);
+    setErr(data);
+    log("ERROR", data);
+    return;
+  }
+
+  renderCandidateTable(data.topk || []);
+  setStatsBox({
+    total_candidates: data.total_candidates ?? 0,
+    topk_returned: (data.topk || []).length
+  });
+  setStatus("Preview 成功", true);
+  log("PREVIEW OK", data);
+}
+
+async function runSingleStage() {
+  setErr(null);
+  setStatus("Run 单阶段中...", true);
+  const params = qsForPreviewOrRun();
+  params.delete("topk");
+  const url = `${BASE}/api/match/v1/run?${params.toString()}`;
+  log("POST " + url);
+
+  const { ok, status, data } = await fetchJson(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}",
+  });
+
+  if (!ok) {
+    setStatus(`Run 失败（${status}）`, false);
+    setErr(data);
+    log("ERROR", data);
+    return;
+  }
+
+  const matches = data.matches || [];
+  const unmatchedStudents = data.unmatched_students || [];
+  const unmatchedVolunteers = data.unmatched_volunteers || [];
+
+  $("matchCount").textContent = String(matches.length);
+  $("unmatchedStuCount").textContent = String(unmatchedStudents.length);
+  $("unmatchedVolCount").textContent = String(unmatchedVolunteers.length);
+
+  renderMatchTable(matches);
+  $("unmatchedStuBox").textContent = JSON.stringify(unmatchedStudents, null, 2);
+  $("unmatchedVolBox").textContent = JSON.stringify(unmatchedVolunteers, null, 2);
+
+  setStatsBox(data.stats || {
+    total_matches: matches.length,
+    unmatched_students: unmatchedStudents.length,
+    unmatched_volunteers: unmatchedVolunteers.length,
+  });
+  setStatus("Run 单阶段成功", true);
+  log("RUN OK", data);
+}
+
+async function runFullStage1() {
+  setErr(null);
+  setStatus("Run Full（Stage1）运行中...", true);
+
+  const params = qsForFullRun();
+  const url = `${BASE}/api/match/v1/run-full?${params.toString()}`;
+  log("POST " + url);
+
+  const { ok, status, data } = await fetchJson(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}",
+  });
+
+  if (!ok) {
+    setStatus(`Run Full 失败（${status}）`, false);
+    setErr(data);
+    log("ERROR", data);
+    return;
+  }
+
+  currentJobId = data.job_id ?? null;
+  $("jobId").textContent = currentJobId ?? "-";
+
+  const summary = data.summary || {};
+  $("fullSummaryBox").textContent = JSON.stringify(summary, null, 2);
+  $("fullQuickInfo").textContent = JSON.stringify({
+    job_id: data.job_id,
+    status: data.status,
+    matches_count: data.matches_count,
+    final_stats: summary.final_stats || null
+  }, null, 2);
+
+  const fs = summary.final_stats || {};
+  $("fullTotalMatches").textContent = String(fs.total_matches ?? data.matches_count ?? 0);
+  $("fullUnmatchedStu").textContent = String(fs.unmatched_students_count ?? 0);
+  $("fullUnmatchedVol").textContent = String(fs.unmatched_volunteers_count ?? 0);
+
+  setStatsBox(summary);
+  setStatus("Run Full 成功", true);
+  log("RUN FULL OK", data);
+
+  await refreshJobs();
+  if (currentJobId) await loadJobDetail(currentJobId);
+}
+
+async function refreshJobs() {
+  const url = `${BASE}/api/match/jobs?offset=0&limit=50`;
+  log("GET " + url);
+  const { ok, status, data } = await fetchJson(url);
+  if (!ok) {
+    setErr(data);
+    log("ERROR jobs", data);
+    return;
+  }
+  renderJobsTable(data.items || []);
+  log("JOBS OK", data);
+}
+
+async function loadJobDetail(jobId) {
+  if (!jobId) return;
+  setStatus(`加载任务详情 #${jobId}...`, true);
+  const url = `${BASE}/api/match/jobs/${jobId}`;
+  log("GET " + url);
+  const { ok, status, data } = await fetchJson(url);
+  if (!ok) {
+    setStatus(`任务详情失败（${status}）`, false);
+    setErr(data);
+    log("ERROR job detail", data);
+    return;
+  }
+  currentJobId = jobId;
+  $("jobId").textContent = String(jobId);
+  renderJobDetail(data);
+  setStatus(`任务详情加载成功 #${jobId}`, true);
+  log("JOB DETAIL OK", data);
+}
+
+function exportCurrentJobCsv() {
+  if (!currentJobDetail || !Array.isArray(currentJobDetail.results)) {
+    alert("当前没有可导出的任务详情");
+    return;
+  }
+  const rows = currentJobDetail.results;
+  const header = [
+    "job_id","stage","round_type","match_order",
+    "student_seq_no","student_name","volunteer_seq_no","volunteer_name",
+    "total_score","base_score","grade_score","subject_score","style_score","special_penalty",
+    "best_subject_raw","best_subject_ids","best_subject_details"
+  ];
+
+  const esc = (v) => {
+    const s = v == null ? "" : String(v);
+    if (s.includes('"') || s.includes(",") || s.includes("\\n")) {
+      return `"${s.replaceAll('"', '""')}"`;
+    }
+    return s;
+  };
+
+  const lines = [header.join(",")];
+  for (const r of rows) {
+    lines.push([
+      currentJobDetail.job?.id ?? "",
+      r.stage ?? "",
+      r.round_type ?? "",
+      r.match_order ?? "",
+      r.student_seq_no ?? "",
+      r.student_name ?? "",
+      r.volunteer_seq_no ?? "",
+      r.volunteer_name ?? "",
+      r.total_score ?? "",
+      r.base_score ?? "",
+      r.grade_score ?? "",
+      r.subject_score ?? "",
+      r.style_score ?? "",
+      r.special_penalty ?? "",
+      r.best_subject_raw ?? "",
+      JSON.stringify(r.best_subject_ids || []),
+      JSON.stringify(r.best_subject_details || [])
+    ].map(esc).join(","));
+  }
+
+  const blob = new Blob(["\ufeff" + lines.join("\\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const jobId = currentJobDetail.job?.id ?? "unknown";
+  a.href = url;
+  a.download = `match_job_${jobId}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+$("btnPreview").addEventListener("click", previewCandidates);
+$("btnRun").addEventListener("click", runSingleStage);
+$("btnRunFull").addEventListener("click", runFullStage1);
+$("btnRefreshJobs").addEventListener("click", refreshJobs);
+$("btnExportCurrentJobCsv").addEventListener("click", exportCurrentJobCsv);
+
+// 初始化
+setStatus("等待操作", true);
+refreshJobs();
 </script>
-
 </body>
 </html>
