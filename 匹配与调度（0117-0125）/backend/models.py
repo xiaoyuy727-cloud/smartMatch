@@ -1,134 +1,270 @@
-# models.py
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Optional
+
 from sqlalchemy import (
-    String,
-    Integer,
     Boolean,
-    Float,
-    Text,
     DateTime,
-    JSON,
-    ForeignKey,
-    func,
+    Float,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    Index,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database import Base
 
 
+# =========================
+# 基础数据表：学生 / 志愿者
+# =========================
+
 class Student(Base):
     __tablename__ = "students"
+    __table_args__ = (
+        UniqueConstraint("seq_no", name="uq_students_seq_no"),
+        Index("ix_students_name", "name"),
+    )
 
-    # 主键：seq_no - 改为 String，因为学号可能包含字母
-    seq_no: Mapped[str] = mapped_column(String(20), primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
-    name: Mapped[str] = mapped_column(String(64), nullable=False)
+    # Excel 字段（无表头固定顺序）
+    seq_no: Mapped[str] = mapped_column(String(64), nullable=False)  # 序号（作为业务唯一键）
+    name: Mapped[str] = mapped_column(String(128), nullable=False)
     gender: Mapped[str] = mapped_column(String(1), nullable=False)  # M/F
-    grade_stage: Mapped[int] = mapped_column(Integer, nullable=False)  # 1/2/3
-    mode: Mapped[str] = mapped_column(String(16), nullable=False)  # online/offline/both
+    stage_code: Mapped[int] = mapped_column(Integer, nullable=False)  # 1/2/3
+    tutoring_mode: Mapped[str] = mapped_column(String(16), nullable=False)  # offline/online/both
 
-    # 科目：虽然存的是数字代码，但用 String 更灵活
-    subj1: Mapped[str] = mapped_column(String(10), nullable=False)
-    subj2: Mapped[str] = mapped_column(String(10), nullable=False)
-    subj3: Mapped[str] = mapped_column(String(10), nullable=False)
+    subj1: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    subj2: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    subj3: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-    weakness_text: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    learning_style: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    interests_text: Mapped[str | None] = mapped_column(String(200), nullable=True)
-    personality_text: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    student_profile: Mapped[str] = mapped_column(Text, nullable=False, default="无")       # 学生情况描述
+    learning_style: Mapped[str] = mapped_column(Text, nullable=False, default="无")        # 学习风格描述
+    interests: Mapped[str] = mapped_column(Text, nullable=False, default="无")             # 兴趣爱好
+    personality: Mapped[str] = mapped_column(Text, nullable=False, default="无")           # 学生性格
 
-    social_worker_name: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    social_worker_phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    social_worker_name: Mapped[str] = mapped_column(String(128), nullable=False, default="无")
+    social_worker_phone: Mapped[str] = mapped_column(String(64), nullable=False, default="无")
 
-    is_priority: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    special_needs_text: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    is_priority: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    special_need: Mapped[str] = mapped_column(Text, nullable=False, default="无")
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
 
 
 class Volunteer(Base):
     __tablename__ = "volunteers"
+    __table_args__ = (
+        UniqueConstraint("seq_no", name="uq_volunteers_seq_no"),
+        Index("ix_volunteers_name", "name"),
+        Index("ix_volunteers_match_mode", "match_mode"),
+    )
 
-    seq_no: Mapped[str] = mapped_column(String(20), primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
-    name: Mapped[str] = mapped_column(String(64), nullable=False)
+    seq_no: Mapped[str] = mapped_column(String(64), nullable=False)  # 序号（业务唯一键）
+    name: Mapped[str] = mapped_column(String(128), nullable=False)
     gender: Mapped[str] = mapped_column(String(1), nullable=False)  # M/F
 
-    student_no: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    email: Mapped[str | None] = mapped_column(String(128), nullable=True)
-    department_major: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    student_no: Mapped[str] = mapped_column(String(64), nullable=False, default="")       # 学号
+    email: Mapped[str] = mapped_column(String(255), nullable=False, default="")            # 学邮
+    department: Mapped[str] = mapped_column(String(255), nullable=False, default="无")     # 院系
 
-    mode: Mapped[str] = mapped_column(String(16), nullable=False)  # online/offline/both
-    match_mode: Mapped[str] = mapped_column(String(16), nullable=False)  # direct/pre
+    tutoring_mode: Mapped[str] = mapped_column(String(16), nullable=False)  # offline/online/both
+    match_mode: Mapped[str] = mapped_column(String(16), nullable=False)      # direct/pre
 
-    # 对学生性别要求：none/M/F
-    gender_requirement: Mapped[str] = mapped_column(String(8), nullable=False, default="none")
+    joined_before: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)    # 是否参加过
+    personality: Mapped[str] = mapped_column(Text, nullable=False, default="无")            # 个人性格
+    student_gender_requirement: Mapped[str] = mapped_column(String(1), nullable=False, default="N")  # F/M/N
 
-    # 年级偏好（学段偏好）三列
-    grade1: Mapped[int] = mapped_column(Integer, nullable=False)
-    grade2: Mapped[int] = mapped_column(Integer, nullable=False)
-    grade3: Mapped[int] = mapped_column(Integer, nullable=False)
+    subj1: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    subj2: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    subj3: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-    # 科目偏好三列
-    subj1: Mapped[str] = mapped_column(String(10), nullable=False)
-    subj2: Mapped[str] = mapped_column(String(10), nullable=False)
-    subj3: Mapped[str] = mapped_column(String(10), nullable=False)
+    stage_pref1: Mapped[int] = mapped_column(Integer, nullable=False)
+    stage_pref2: Mapped[int] = mapped_column(Integer, nullable=False)
+    stage_pref3: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    # 容量：可带几个学生（默认 1）
-    capacity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    capacity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)  # 本期按1使用
 
-    # 教学风格（后续 DeepSeek）
-    teaching_style_text: Mapped[str | None] = mapped_column(String(300), nullable=True)
-
-    # 是否参加过/其它（可扩展）
-    participated_before: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
 
 
-class MatchJob(Base):
+# ==========================================
+# 匹配结果相关（本批不使用，但先建好最终结构）
+# ==========================================
+
+class MatchPairScoreDetail(Base):
     """
-    Stage1：一次完整匹配任务（direct -> pre）对应一条记录
+    所有实际参与计算的合法 pair 打分明细（按阶段落库）
+    phase: direct / pre
     """
-    __tablename__ = "match_jobs"
+    __tablename__ = "match_pair_score_details"
+    __table_args__ = (
+        Index("ix_pair_scores_phase", "phase"),
+        Index("ix_pair_scores_student_seq", "student_seq"),
+        Index("ix_pair_scores_teacher_seq", "teacher_seq"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    status: Mapped[str] = mapped_column(String(16), nullable=False, default="running")  # running/success/failed
-    algorithm_version: Mapped[str] = mapped_column(String(64), nullable=False, default="v1_greedy_direct_then_pre")
-    llm_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    grade_stage_filter: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
-    params_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
-    summary_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    phase: Mapped[str] = mapped_column(String(16), nullable=False)  # direct/pre
+    student_seq: Mapped[str] = mapped_column(String(64), nullable=False)
+    student_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    teacher_seq: Mapped[str] = mapped_column(String(64), nullable=False)
+    teacher_name: Mapped[str] = mapped_column(String(128), nullable=False)
 
-    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    student_tutoring_mode: Mapped[str] = mapped_column(String(16), nullable=False)
+    teacher_tutoring_mode: Mapped[str] = mapped_column(String(16), nullable=False)
+    student_is_priority: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    teacher_match_mode: Mapped[str] = mapped_column(String(16), nullable=False)
 
-    created_at: Mapped[object] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
-    finished_at: Mapped[object | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # 客观分
+    grade_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    subject_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    best_subject_raw: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+
+    # DS 主观匹配（40）
+    ds_subjective_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    ds_subjective_reason_summary: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    ds_subjective_reason_raw: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    ds_subjective_status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
+    ds_subjective_error_message: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    ds_subjective_cache_hit: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    ds_subjective_input_hash: Mapped[str] = mapped_column(String(128), nullable=False, default="")
+
+    # DS 特殊需求惩罚（20）
+    ds_special_penalty: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    ds_special_reason_summary: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    ds_special_reason_raw: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    ds_special_status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
+    ds_special_error_message: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    ds_special_cache_hit: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    ds_special_input_hash: Mapped[str] = mapped_column(String(128), nullable=False, default="")
+
+    total_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+
+    selected_in_final: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    not_selected_reason: Mapped[str] = mapped_column(Text, nullable=False, default="")
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
 
 
-class MatchResult(Base):
-    """
-    Stage1：最终匹配结果明细（只存最终选中的 pair，不存全量候选）
-    """
-    __tablename__ = "match_results"
+class FinalMatchResult(Base):
+    __tablename__ = "final_match_results"
+    __table_args__ = (
+        Index("ix_final_results_phase", "phase"),
+        Index("ix_final_results_student_seq", "student_seq"),
+        Index("ix_final_results_teacher_seq", "teacher_seq"),
+        UniqueConstraint("student_seq", name="uq_final_results_student_seq"),
+        UniqueConstraint("teacher_seq", name="uq_final_results_teacher_seq"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    job_id: Mapped[int] = mapped_column(ForeignKey("match_jobs.id"), index=True, nullable=False)
 
-    stage: Mapped[str] = mapped_column(String(16), nullable=False)       # direct / pre
-    round_type: Mapped[str] = mapped_column(String(16), nullable=False)  # priority / normal
-    match_order: Mapped[int] = mapped_column(Integer, nullable=False)     # 本阶段选中顺序（1-based）
+    phase: Mapped[str] = mapped_column(String(16), nullable=False)  # direct/pre
 
-    student_seq_no: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
-    student_name_snapshot: Mapped[str] = mapped_column(String(64), nullable=False)
-    volunteer_seq_no: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
-    volunteer_name_snapshot: Mapped[str] = mapped_column(String(64), nullable=False)
+    student_seq: Mapped[str] = mapped_column(String(64), nullable=False)
+    student_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    teacher_seq: Mapped[str] = mapped_column(String(64), nullable=False)
+    teacher_name: Mapped[str] = mapped_column(String(128), nullable=False)
 
-    total_score: Mapped[float] = mapped_column(Float, nullable=False)
-    base_score: Mapped[float] = mapped_column(Float, nullable=False)
-    grade_score: Mapped[float] = mapped_column(Float, nullable=False)
-    subject_score: Mapped[float] = mapped_column(Float, nullable=False)
-    style_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
-    special_penalty: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    tutoring_mode: Mapped[str] = mapped_column(String(16), nullable=False, default="")
+    teacher_match_mode: Mapped[str] = mapped_column(String(16), nullable=False, default="")
 
-    best_subject_raw: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    best_subject_ids_json: Mapped[list | None] = mapped_column(JSON, nullable=True)
-    best_subject_details_json: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    grade_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    subject_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    ds_subjective_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    ds_special_penalty: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    total_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
 
-    created_at: Mapped[object] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    ds_subjective_reason_summary: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    ds_special_reason_summary: Mapped[str] = mapped_column(Text, nullable=False, default="")
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+
+
+class UnmatchedStudent(Base):
+    __tablename__ = "unmatched_students"
+    __table_args__ = (
+        UniqueConstraint("student_seq", name="uq_unmatched_students_student_seq"),
+        Index("ix_unmatched_students_student_seq", "student_seq"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+
+    student_seq: Mapped[str] = mapped_column(String(64), nullable=False)
+    student_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    gender: Mapped[str] = mapped_column(String(1), nullable=False)
+    stage_code: Mapped[int] = mapped_column(Integer, nullable=False)
+    tutoring_mode: Mapped[str] = mapped_column(String(16), nullable=False)
+    is_priority: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    reason_summary: Mapped[str] = mapped_column(Text, nullable=False, default="")
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+
+
+class UnusedVolunteer(Base):
+    __tablename__ = "unused_volunteers"
+    __table_args__ = (
+        UniqueConstraint("teacher_seq", name="uq_unused_volunteers_teacher_seq"),
+        Index("ix_unused_volunteers_teacher_seq", "teacher_seq"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+
+    teacher_seq: Mapped[str] = mapped_column(String(64), nullable=False)
+    teacher_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    gender: Mapped[str] = mapped_column(String(1), nullable=False)
+    tutoring_mode: Mapped[str] = mapped_column(String(16), nullable=False)
+    match_mode: Mapped[str] = mapped_column(String(16), nullable=False)
+
+    reason_summary: Mapped[str] = mapped_column(Text, nullable=False, default="")
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+
+
+class DSScoreCache(Base):
+    """
+    DS 评分缓存（数据库缓存）
+    键建议：student_seq + teacher_seq + score_type + input_hash
+    score_type: subjective / special
+    """
+    __tablename__ = "ds_score_cache"
+    __table_args__ = (
+        UniqueConstraint(
+            "student_seq", "teacher_seq", "score_type", "input_hash",
+            name="uq_ds_score_cache_pair_type_hash"
+        ),
+        Index("ix_ds_score_cache_pair", "student_seq", "teacher_seq"),
+        Index("ix_ds_score_cache_score_type", "score_type"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+
+    student_seq: Mapped[str] = mapped_column(String(64), nullable=False)
+    teacher_seq: Mapped[str] = mapped_column(String(64), nullable=False)
+    score_type: Mapped[str] = mapped_column(String(32), nullable=False)  # subjective/special
+    input_hash: Mapped[str] = mapped_column(String(128), nullable=False)
+
+    score_value: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    reason_summary: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    reason_raw: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="success")
+    error_message: Mapped[str] = mapped_column(Text, nullable=False, default="")
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+    )

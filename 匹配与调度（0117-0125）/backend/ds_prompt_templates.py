@@ -1,179 +1,102 @@
-# backend/ds_prompt_templates.py
 from __future__ import annotations
 
-from typing import Any, Dict
-
-PROMPT_VERSION_STYLE = "style-v1"
-PROMPT_VERSION_MAJOR = "major-v1"
-PROMPT_VERSION_SPECIAL = "special-v1"
+from typing import Any, Dict, List
 
 
-def _safe_text(v: Any) -> str:
-    if v is None:
-        return ""
-    return str(v).strip()
+def _json_output_requirement() -> str:
+    # 强制 JSON 输出，便于解析；reason_raw 允许更长
+    return (
+        "你必须只输出一个JSON对象，不要输出任何多余文本、不要使用markdown代码块。"
+        "JSON字段必须严格包含："
+        "score（数字，允许小数）、reason_summary（字符串，<=120字）、reason_raw（字符串，可较长）。"
+    )
 
 
-def _student_block(s: Dict) -> str:
-    return f"""
-学生信息：
-- 序号: {_safe_text(s.get("seq_no"))}
-- 姓名: {_safe_text(s.get("name"))}
-- 性别: {_safe_text(s.get("gender"))}
-- 学段/年级代码: {_safe_text(s.get("grade_stage"))}
-- 辅导方式需求: {_safe_text(s.get("mode"))}
-- 科目偏好/需求（1/2/3）: {_safe_text(s.get("subj1"))}, {_safe_text(s.get("subj2"))}, {_safe_text(s.get("subj3"))}
-- 薄弱学科与知识短板: {_safe_text(s.get("weakness_text"))}
-- 学习风格: {_safe_text(s.get("learning_style"))}
-- 兴趣爱好: {_safe_text(s.get("interests_text"))}
-- 性格特点: {_safe_text(s.get("personality_text"))}
-- 是否优先: {_safe_text(s.get("is_priority"))}
-- 特殊需求: {_safe_text(s.get("special_needs_text"))}
-""".strip()
-
-
-def _volunteer_block(v: Dict) -> str:
-    return f"""
-志愿者信息：
-- 序号: {_safe_text(v.get("seq_no"))}
-- 姓名: {_safe_text(v.get("name"))}
-- 性别: {_safe_text(v.get("gender"))}
-- 院系/专业: {_safe_text(v.get("department_major"))}
-- 辅导方式: {_safe_text(v.get("mode"))}
-- 匹配类型: {_safe_text(v.get("match_mode"))}
-- 对学生性别要求: {_safe_text(v.get("gender_requirement"))}
-- 学段偏好（1/2/3）: {_safe_text(v.get("grade1"))}, {_safe_text(v.get("grade2"))}, {_safe_text(v.get("grade3"))}
-- 科目偏好（1/2/3）: {_safe_text(v.get("subj1"))}, {_safe_text(v.get("subj2"))}, {_safe_text(v.get("subj3"))}
-- 教学风格/个人风格: {_safe_text(v.get("teaching_style_text"))}
-- 是否参加过: {_safe_text(v.get("participated_before"))}
-""".strip()
-
-
-def style_match_prompt(student: Dict, volunteer: Dict) -> Dict[str, str]:
+def build_subjective_messages(
+    student_profile: str,
+    learning_style: str,
+    interests: str,
+    student_personality: str,
+    teacher_department: str,
+    teacher_joined_before: bool,
+    teacher_personality: str,
+) -> List[Dict[str, Any]]:
     """
-    输出 JSON:
-    {
-      "score": 0~20,
-      "confidence": 0~1,
-      "reason": "...",
-      "rule_checks": ["..."]
-    }
+    主观匹配度（40分）评分：综合学生主观描述 + 老师主观描述与专业背景
+    输出 score: 0~40
     """
-    system = """
-你是一个严格的教育匹配评分器。你只负责“教学风格/性格匹配”评分，不要考虑专业背景，不要考虑特殊需求，不要重复给其他维度加分。
-必须输出 JSON（不要 Markdown，不要解释性前缀）。
-""".strip()
+    system = (
+        "你是一个严格的匹配评分器。"
+        "你的任务是根据给定信息，评估老师与学生在主观层面的匹配程度。"
+        "评分范围 0~40 分，越高表示越匹配。"
+        "请尽量客观、可解释，理由要具体到信息点。"
+        + _json_output_requirement()
+    )
 
-    user = f"""
-请根据以下规则为“教学风格/性格匹配”打分（满分 20 分）：
+    rubric = (
+        "评分参考（总分40）：\n"
+        "1) 学习风格适配（0~15）：老师性格/经验是否适合学生学习风格与学习情况。\n"
+        "2) 性格与沟通风格匹配（0~15）：老师性格是否能与学生性格良好互动。\n"
+        "3) 兴趣点与激励潜力（0~5）：兴趣爱好是否有助于建立关系/激励学习。\n"
+        "4) 专业与背景助益（0~5）：老师院系/经验是否可能更好帮助学生。\n"
+        "注意：不要把硬性约束（性别、线上线下）计入此分。"
+    )
 
-【评分范围】
-- score: 0 到 20 的数字（可带 1 位小数）
-- confidence: 0 到 1
-- reason: 不超过120字
-- rule_checks: 字符串数组（列出命中的规则）
+    user = (
+        "【学生信息】\n"
+        f"- 学生情况描述：{student_profile}\n"
+        f"- 学习风格描述：{learning_style}\n"
+        f"- 兴趣爱好：{interests}\n"
+        f"- 学生性格：{student_personality}\n\n"
+        "【老师信息】\n"
+        f"- 院系：{teacher_department}\n"
+        f"- 是否参加过过去活动：{1 if teacher_joined_before else 0}\n"
+        f"- 个人性格：{teacher_personality}\n\n"
+        f"{rubric}\n\n"
+        "请输出JSON：{score, reason_summary, reason_raw}"
+    )
 
-【只允许考虑】
-- 学生学习风格（视觉/听觉/动手等）
-- 学生性格特点、兴趣
-- 志愿者教学风格、性格描述（耐心/活泼/严肃等）
-
-【禁止考虑】
-- 志愿者专业背景（这是另一个维度）
-- 学生特殊需求（这是另一个维度）
-- 性别、线上线下合法性（这些已在系统过滤）
-
-【输出示例】
-{{"score": 14, "confidence": 0.82, "reason": "学生偏内向且需要耐心引导，老师风格耐心细致，节奏较匹配。", "rule_checks": ["性格节奏匹配", "教学风格匹配"]}}
-
-{_student_block(student)}
-
-{_volunteer_block(volunteer)}
-""".strip()
-    return {"system": system, "user": user}
+    return [
+        {"role": "system", "content": system},
+        {"role": "user", "content": user},
+    ]
 
 
-def major_match_prompt(student: Dict, volunteer: Dict) -> Dict[str, str]:
+def build_special_penalty_messages(
+    student_special_need: str,
+    teacher_all_info_text: str,
+) -> List[Dict[str, Any]]:
     """
-    输出 JSON:
-    {
-      "score": 0~20,
-      "confidence": 0~1,
-      "reason": "...",
-      "rule_checks": ["..."]
-    }
+    特殊需求惩罚（20分）：越不匹配惩罚越高
+    输出 score: 0~20（此score表示惩罚分）
     """
-    system = """
-你是一个严格的教育匹配评分器。你只负责“志愿者专业背景与学生学业需求匹配”评分，不要考虑教学风格，不要考虑特殊需求。
-必须输出 JSON（不要 Markdown，不要解释性前缀）。
-""".strip()
+    system = (
+        "你是一个严格的特殊需求不匹配惩罚评分器。"
+        "你的任务是评估老师对学生特殊需求的“不匹配程度”。"
+        "输出惩罚分范围 0~20，越高表示越不匹配（惩罚越大）。"
+        "如果老师信息明显能满足特殊需求，惩罚应接近0。"
+        + _json_output_requirement()
+    )
 
-    user = f"""
-请根据以下规则为“专业匹配度”打分（满分 20 分）：
+    rubric = (
+        "评分参考（惩罚分0~20）：\n"
+        "0~3：高度匹配/明显能满足，几乎不惩罚。\n"
+        "4~8：基本能满足但有少量风险。\n"
+        "9~14：存在明显不确定/不匹配点。\n"
+        "15~20：高度不匹配或可能造成明显问题。\n"
+        "注意：只根据特殊需求与老师信息评估，不要把科目/学段偏好计入惩罚。"
+    )
 
-【评分范围】
-- score: 0 到 20 的数字（可带 1 位小数）
-- confidence: 0 到 1
-- reason: 不超过120字
-- rule_checks: 字符串数组
+    user = (
+        "【学生特殊需求】\n"
+        f"{student_special_need}\n\n"
+        "【老师全部信息】\n"
+        f"{teacher_all_info_text}\n\n"
+        f"{rubric}\n\n"
+        "请输出JSON：{score, reason_summary, reason_raw}"
+    )
 
-【只允许考虑】
-- 志愿者院系/专业
-- 学生薄弱学科、知识短板、学科需求（含科目偏好）
-
-【禁止考虑】
-- 学生/老师性格与教学风格
-- 学生特殊需求
-- 性别、线上线下合法性
-
-【输出示例】
-{{"score": 16, "confidence": 0.75, "reason": "老师专业背景与学生主要薄弱学科相关，能提供较强学科支持。", "rule_checks": ["专业相关性较高"]}}
-
-{_student_block(student)}
-
-{_volunteer_block(volunteer)}
-""".strip()
-    return {"system": system, "user": user}
-
-
-def special_needs_prompt(student: Dict, volunteer: Dict) -> Dict[str, str]:
-    """
-    输出 JSON:
-    {
-      "penalty": -20~0,
-      "confidence": 0~1,
-      "reason": "...",
-      "rule_checks": ["..."]
-    }
-    """
-    system = """
-你是一个严格的教育匹配评分器。你只负责“特殊需求匹配惩罚”评估。
-必须输出 JSON（不要 Markdown，不要解释性前缀）。
-""".strip()
-
-    user = f"""
-请根据以下规则评估“特殊需求惩罚”（范围 -20 到 0）：
-
-【规则】
-- 如果学生没有特殊需求（空白/无/无特殊需求），penalty = 0
-- 若特殊需求部分不满足，给负分（如 -3~-12）
-- 若明显不满足关键需求，给更大负分（如 -13~-20）
-- 若完全满足或未见明显冲突，penalty = 0
-
-【只允许考虑】
-- 学生特殊需求文本
-- 志愿者已知能力/方式/风格描述（如线上线下方式、风格说明等）
-
-【禁止考虑】
-- 专业匹配度
-- 风格匹配度重复加减分
-- 系统已过滤的合法性条件（性别要求、mode合法性）
-
-【输出示例】
-{{"penalty": -8, "confidence": 0.71, "reason": "学生提到需要稳定线下陪伴，老师信息显示线上为主，存在部分不满足。", "rule_checks": ["特殊需求部分不满足"]}}
-
-{_student_block(student)}
-
-{_volunteer_block(volunteer)}
-""".strip()
-    return {"system": system, "user": user}
+    return [
+        {"role": "system", "content": system},
+        {"role": "user", "content": user},
+    ]

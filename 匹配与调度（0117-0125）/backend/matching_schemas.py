@@ -1,104 +1,121 @@
-# backend/matching_schemas.py
-from pydantic import BaseModel
-from typing import List, Optional, Any
+from __future__ import annotations
+
+from typing import Any, List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
-class BestSubjectDetail(BaseModel):
-    subject_id: int
-    student_rank: int
-    student_weight: int
-    teacher_rank: int
-    teacher_weight: int
-    product: int  # 0..9
+class RunFullMatchResponse(BaseModel):
+    ok: bool = True
+    cleared_old_results: bool = True
+
+    total_students: int = 0
+    total_volunteers: int = 0
+
+    direct_volunteers: int = 0
+    pre_volunteers: int = 0
+
+    direct_matched: int = 0
+    pre_matched: int = 0
+    total_matched: int = 0
+
+    unmatched_students: int = 0
+    unused_volunteers: int = 0
+
+    message: str = ""
 
 
-class CandidatePairOut(BaseModel):
-    student_seq_no: str
+class PairScoreDetailOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    phase: str
+
+    student_seq: str
     student_name: str
+    teacher_seq: str
+    teacher_name: str
+
+    student_tutoring_mode: str
+    teacher_tutoring_mode: str
     student_is_priority: bool
-    student_grade_stage: Optional[int] = None
-    student_mode: Optional[str] = None
-
-    volunteer_seq_no: str
-    volunteer_name: str
-    volunteer_match_mode: str
-    volunteer_capacity: int
-    volunteer_mode: Optional[str] = None
-
-    is_legal: bool
-    illegal_reason: Optional[str] = None
+    teacher_match_mode: str
 
     grade_score: float
     subject_score: float
+    best_subject_raw: float
 
-    # Stage2: 聚合主观分（仍保留）
-    style_score: float
-    # Stage2: 分维度主观分
-    teaching_style_score: float = 0.0
-    major_match_score: float = 0.0
+    ds_subjective_score: float
+    ds_subjective_reason_summary: str
+    ds_subjective_status: str
+    ds_subjective_cache_hit: bool
 
-    base_score: float
-    special_penalty: float
+    ds_special_penalty: float
+    ds_special_reason_summary: str
+    ds_special_status: str
+    ds_special_cache_hit: bool
+
     total_score: float
+    selected_in_final: bool
 
-    best_subject_raw: int
-    best_subject_ids: List[int]
-    best_subject_details: List[BestSubjectDetail]
-
-    # Stage2: LLM解释与状态
-    llm_status: Optional[str] = None
-    llm_model: Optional[str] = None
-    prompt_version_style: Optional[str] = None
-    prompt_version_major: Optional[str] = None
-    prompt_version_special: Optional[str] = None
-
-    llm_reason_style: Optional[str] = None
-    llm_reason_major: Optional[str] = None
-    llm_reason_special: Optional[str] = None
-
-    llm_confidence_style: Optional[float] = None
-    llm_confidence_major: Optional[float] = None
-    llm_confidence_special: Optional[float] = None
+    # 可选展示（默认不返回，除非 include_raw=1）
+    ds_subjective_reason_raw: Optional[str] = None
+    ds_special_reason_raw: Optional[str] = None
+    ds_subjective_error_message: Optional[str] = None
+    ds_special_error_message: Optional[str] = None
 
 
-class MatchPreviewOut(BaseModel):
-    total_candidates: int
-    topk: List[CandidatePairOut]
-    stats: Optional[dict] = None
+class FinalMatchResultOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
 
+    id: int
+    phase: str
 
-class MatchPairOut(BaseModel):
-    student_seq_no: str
+    student_seq: str
     student_name: str
-    volunteer_seq_no: str
-    volunteer_name: str
+    teacher_seq: str
+    teacher_name: str
 
-    total_score: float
-    base_score: float
+    tutoring_mode: str
+    teacher_match_mode: str
+
     grade_score: float
     subject_score: float
+    ds_subjective_score: float
+    ds_special_penalty: float
+    total_score: float
 
-    # Stage2
-    style_score: float
-    teaching_style_score: float = 0.0
-    major_match_score: float = 0.0
-    special_penalty: float = 0.0
-
-    best_subject_raw: int
-    best_subject_ids: List[int]
-    best_subject_details: List[BestSubjectDetail]
-
-    llm_status: Optional[str] = None
-    llm_reason_style: Optional[str] = None
-    llm_reason_major: Optional[str] = None
-    llm_reason_special: Optional[str] = None
-    llm_confidence_style: Optional[float] = None
-    llm_confidence_major: Optional[float] = None
-    llm_confidence_special: Optional[float] = None
+    ds_subjective_reason_summary: str
+    ds_special_reason_summary: str
 
 
-class MatchRunOut(BaseModel):
-    matches: List[MatchPairOut]
-    unmatched_students: List[str]
-    unmatched_volunteers: List[str]
-    stats: Optional[dict] = None
+class UnmatchedStudentOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    student_seq: str
+    student_name: str
+    gender: str
+    stage_code: int
+    tutoring_mode: str
+    is_priority: bool
+    reason_summary: str
+
+
+class UnusedVolunteerOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    teacher_seq: str
+    teacher_name: str
+    gender: str
+    tutoring_mode: str
+    match_mode: str
+    reason_summary: str
+
+
+class PagedResponse(BaseModel):
+    total: int
+    offset: int
+    limit: int
+    items: list[Any] = Field(default_factory=list)

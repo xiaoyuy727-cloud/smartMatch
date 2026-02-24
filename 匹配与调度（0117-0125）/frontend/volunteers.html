@@ -1,1154 +1,307 @@
 <!doctype html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>数星阁 · 志愿者管理</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f5f7fb;
-      color: #1e293b;
-      margin: 0;
-      padding: 24px;
-      line-height: 1.5;
-    }
-
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-    }
-
-    /* 头部样式 */
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 28px;
-      padding-bottom: 16px;
-      border-bottom: 1px solid #e2e8f0;
-    }
-
-    .logo-area {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .logo {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      object-fit: cover;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-      background: linear-gradient(135deg, #2563eb, #7c3aed);
-    }
-
-    .title-area h2 {
-      font-size: 28px;
-      font-weight: 600;
-      background: linear-gradient(135deg, #2563eb, #7c3aed);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      margin: 0;
-      line-height: 1.2;
-    }
-
-    .title-area .subtitle {
-      font-size: 13px;
-      color: #64748b;
-      margin-top: 4px;
-    }
-
-    .badge {
-      background: #e2e8f0;
-      color: #475569;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 13px;
-      font-weight: 500;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .badge code {
-      background: #cbd5e1;
-      padding: 2px 8px;
-      border-radius: 12px;
-      color: #1e293b;
-    }
-
-    /* 卡片样式 */
-    .card {
-      background: white;
-      border-radius: 20px;
-      padding: 24px;
-      margin-bottom: 24px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-      border: 1px solid rgba(226, 232, 240, 0.6);
-      transition: all 0.2s;
-    }
-
-    .card:hover {
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
-    }
-
-    .card h3 {
-      font-size: 18px;
-      font-weight: 600;
-      color: #0f172a;
-      margin-bottom: 20px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .card h3::before {
-      content: '';
-      width: 4px;
-      height: 18px;
-      background: #2563eb;
-      border-radius: 2px;
-      display: inline-block;
-    }
-
-    .card h4 {
-      font-size: 15px;
-      font-weight: 500;
-      color: #334155;
-      margin: 20px 0 12px;
-    }
-
-    /* 网格布局 */
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-    }
-
-    .grid-4 {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-    }
-
-    .grid-5 {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 16px;
-    }
-
-    /* 表单元素 */
-    .form-group {
-      margin-bottom: 16px;
-    }
-
-    label {
-      display: block;
-      font-size: 13px;
-      font-weight: 500;
-      color: #475569;
-      margin-bottom: 6px;
-      letter-spacing: 0.3px;
-    }
-
-    input, select, button {
-      font-family: inherit;
-      font-size: 14px;
-    }
-
-    input, select {
-      width: 100%;
-      padding: 10px 14px;
-      border: 1.5px solid #e2e8f0;
-      border-radius: 12px;
-      background: white;
-      transition: all 0.2s;
-      color: #1e293b;
-    }
-
-    input:hover, select:hover {
-      border-color: #94a3b8;
-    }
-
-    input:focus, select:focus {
-      outline: none;
-      border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-    }
-
-    /* 按钮样式 */
-    .btn {
-      padding: 10px 20px;
-      border-radius: 12px;
-      font-weight: 500;
-      font-size: 14px;
-      border: none;
-      cursor: pointer;
-      transition: all 0.15s;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      background: white;
-      border: 1.5px solid #e2e8f0;
-      color: #475569;
-    }
-
-    .btn-primary {
-      background: #2563eb;
-      border: 1.5px solid #2563eb;
-      color: white;
-    }
-
-    .btn-primary:hover:not(:disabled) {
-      background: #1d4ed8;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
-    }
-
-    .btn-success {
-      background: #059669;
-      border: 1.5px solid #059669;
-      color: white;
-    }
-
-    .btn-success:hover:not(:disabled) {
-      background: #047857;
-    }
-
-    .btn-danger {
-      background: #dc2626;
-      border: 1.5px solid #dc2626;
-      color: white;
-    }
-
-    .btn-danger:hover:not(:disabled) {
-      background: #b91c1c;
-    }
-
-    .btn-outline {
-      background: transparent;
-      border: 1.5px solid #e2e8f0;
-    }
-
-    .btn-outline:hover:not(:disabled) {
-      background: #f8fafc;
-      border-color: #94a3b8;
-    }
-
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .btn-icon {
-      padding: 10px;
-      width: 40px;
-    }
-
-    .btn-sm {
-      padding: 6px 12px;
-      font-size: 13px;
-    }
-
-    /* 文件上传区域 */
-    .file-upload {
-      border: 2px dashed #e2e8f0;
-      border-radius: 16px;
-      padding: 24px;
-      text-align: center;
-      background: #f8fafc;
-      transition: all 0.2s;
-      cursor: pointer;
-    }
-
-    .file-upload:hover {
-      border-color: #2563eb;
-      background: #f0f9ff;
-    }
-
-    .file-upload input {
-      display: none;
-    }
-
-    .file-upload-label {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-    }
-
-    .file-upload-icon {
-      font-size: 32px;
-    }
-
-    .file-upload-text {
-      font-weight: 500;
-      color: #2563eb;
-    }
-
-    .file-upload-hint {
-      font-size: 12px;
-      color: #94a3b8;
-    }
-
-    /* 状态标签 */
-    .status-bar {
-      background: #f8fafc;
-      padding: 16px;
-      border-radius: 16px;
-      display: flex;
-      gap: 24px;
-      flex-wrap: wrap;
-      margin-top: 16px;
-    }
-
-    .status-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .status-label {
-      font-size: 13px;
-      color: #64748b;
-    }
-
-    .status-value {
-      font-weight: 600;
-      color: #0f172a;
-      background: white;
-      padding: 4px 12px;
-      border-radius: 30px;
-      border: 1px solid #e2e8f0;
-    }
-
-    .status-badge {
-      padding: 4px 12px;
-      border-radius: 30px;
-      font-size: 13px;
-      font-weight: 500;
-    }
-
-    .status-badge.ok {
-      background: #d1fae5;
-      color: #065f46;
-    }
-
-    .status-badge.bad {
-      background: #fee2e2;
-      color: #991b1b;
-    }
-
-    /* 操作栏 */
-    .action-bar {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin: 16px 0;
-      padding: 12px 16px;
-      background: #f8fafc;
-      border-radius: 16px;
-    }
-
-    .selected-info {
-      font-size: 14px;
-      color: #475569;
-    }
-
-    .selected-count {
-      font-weight: 600;
-      color: #2563eb;
-      background: white;
-      padding: 2px 8px;
-      border-radius: 20px;
-      margin-left: 4px;
-    }
-
-    /* 表格样式 */
-    .table-container {
-      border-radius: 16px;
-      border: 1px solid #e2e8f0;
-      overflow: auto;
-      max-height: 500px;
-      background: white;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-
-    th {
-      background: #f8fafc;
-      padding: 14px 12px;
-      font-weight: 600;
-      color: #475569;
-      text-align: left;
-      border-bottom: 1px solid #e2e8f0;
-      position: sticky;
-      top: 0;
-      background: #f8fafc;
-      z-index: 10;
-    }
-
-    td {
-      padding: 12px;
-      border-bottom: 1px solid #f1f5f9;
-      color: #334155;
-    }
-
-    tr:hover td {
-      background: #f8fafc;
-    }
-
-    /* 复选框样式 */
-    .checkbox-column {
-      width: 40px;
-      text-align: center;
-    }
-
-    .checkbox-all {
-      width: 40px;
-      text-align: center;
-    }
-
-    input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
-      cursor: pointer;
-      accent-color: #2563eb;
-    }
-
-    /* 预览区域 */
-    .preview-box {
-      background: #1e293b;
-      color: #e2e8f0;
-      padding: 16px;
-      border-radius: 16px;
-      font-family: 'JetBrains Mono', 'Fira Code', monospace;
-      font-size: 12px;
-      overflow: auto;
-      max-height: 300px;
-      margin-top: 12px;
-    }
-
-    .preview-box pre {
-      margin: 0;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-    }
-
-    /* 日志区域 */
-    .log-box {
-      background: #0f172a;
-      color: #94a3b8;
-      padding: 16px;
-      border-radius: 16px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      overflow: auto;
-      max-height: 200px;
-      margin-top: 12px;
-    }
-
-    .log-box pre {
-      margin: 0;
-      color: #94a3b8;
-    }
-
-    /* 分页控制 */
-    .pagination {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-top: 16px;
-      padding: 12px;
-      background: #f8fafc;
-      border-radius: 40px;
-    }
-
-    .page-info {
-      padding: 6px 16px;
-      background: white;
-      border-radius: 30px;
-      font-size: 13px;
-      font-weight: 500;
-      color: #475569;
-      border: 1px solid #e2e8f0;
-    }
-
-    /* 工具类 */
-    .flex { display: flex; }
-    .gap-2 { gap: 8px; }
-    .gap-4 { gap: 16px; }
-    .items-center { align-items: center; }
-    .justify-between { justify-content: space-between; }
-    .mt-4 { margin-top: 16px; }
-    .mb-2 { margin-bottom: 8px; }
-    .w-full { width: 100%; }
-    .hidden { display: none; }
-
-    /* 动画 */
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(5px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .fade-in {
-      animation: fadeIn 0.3s ease;
-    }
-
-    /* 删除确认对话框 */
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }
-
-    .modal {
-      background: white;
-      border-radius: 24px;
-      padding: 24px;
-      width: 400px;
-      max-width: 90%;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-    }
-
-    .modal h4 {
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 12px;
-      color: #0f172a;
-    }
-
-    .modal p {
-      color: #475569;
-      margin-bottom: 20px;
-    }
-
-    .modal-actions {
-      display: flex;
-      gap: 12px;
-      justify-content: flex-end;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>志愿者管理 - 师生匹配系统</title>
+  <script src="./common.js"></script>
 </head>
-
 <body>
-  <div class="container">
-    <!-- 删除确认对话框 -->
-    <div id="deleteModal" class="modal-overlay" style="display: none;">
-      <div class="modal">
-        <h4>确认删除</h4>
-        <p id="deleteModalMessage">确定要删除选中的 <span id="selectedCountDisplay">0</span> 条志愿者记录吗？</p>
-        <div class="modal-actions">
-          <button class="btn btn-outline" onclick="hideDeleteModal()">取消</button>
-          <button class="btn btn-danger" id="confirmDeleteBtn">确认删除</button>
-        </div>
+<div class="page">
+  <div class="card">
+    <div class="section-title">
+      <h1>志愿者管理</h1>
+      <div class="row">
+        <a class="btn" href="./students.html">学生管理</a>
+        <a class="btn" href="./matching.html">匹配与结果</a>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col grow">
+        <label>后端 API Base</label>
+        <input id="apiBase" type="text" placeholder="http://127.0.0.1:8000" />
+      </div>
+      <div class="col">
+        <label>&nbsp;</label>
+        <button id="saveApiBaseBtn" class="btn">保存</button>
+      </div>
+    </div>
+    <div id="topMsg"></div>
+  </div>
+
+  <div class="card">
+    <h2>导入志愿者 Excel（xlsx，无表头，固定18列）</h2>
+    <div class="row">
+      <input id="fileInput" type="file" accept=".xlsx" />
+      <button id="previewBtn" class="btn primary">预览导入</button>
+      <button id="commitBtn" class="btn ok" disabled>确认提交</button>
+      <span class="muted">规则：文件内重复序号保留第一条；数据库已存在序号跳过</span>
+    </div>
+    <div id="importMsg"></div>
+
+    <div class="grid-2" style="margin-top:12px;">
+      <div class="card" style="margin:0;">
+        <h3>预览统计</h3>
+        <div id="previewStats" class="stats"></div>
+      </div>
+      <div class="card" style="margin:0;">
+        <h3>错误汇总（Top）</h3>
+        <div id="errorSummary"></div>
       </div>
     </div>
 
-    <!-- 头部 - 带logo -->
-    <div class="header">
-      <div class="logo-area">
-        <!-- 插入1.png作为logo -->
-        <img src="1.png" alt="数星阁" class="logo" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'logo\' style=\'background:linear-gradient(135deg, #2563eb, #7c3aed); display:flex; align-items:center; justify-content:center; color:white; font-weight:bold;\'>星</div>' + this.parentElement.innerHTML">
-        <div class="title-area">
-          <h2>数星阁——志愿者管理</h2>
-          <div class="subtitle">志愿者匹配系统 · 志愿者数据管理</div>
-        </div>
-      </div>
-      <div class="badge">
-        <span>后端地址</span>
-        <code id="baseLabel"></code>
-      </div>
-    </div>
-
-    <!-- 导入卡片 -->
-    <div class="card fade-in">
-      <h3>📤 导入志愿者数据</h3>
-      
-      <div class="grid-2">
-        <!-- 左侧：上传区域 -->
-        <div>
-          <div class="file-upload" onclick="document.getElementById('fileInput').click()">
-            <input type="file" id="fileInput" accept=".xlsx,.xls" />
-            <div class="file-upload-label">
-              <span class="file-upload-icon">📎</span>
-              <span class="file-upload-text">选择 Excel 文件</span>
-              <span class="file-upload-hint">支持 .xlsx, .xls 格式</span>
-            </div>
-          </div>
-          <div class="flex items-center gap-4 mt-4">
-            <div style="flex:1">
-              <label>严格模式</label>
-              <select id="strictSel" class="w-full">
-                <option value="true" selected>✅ 开启 (有错误禁止提交)</option>
-                <option value="false">🔄 关闭 (允许提交)</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- 右侧：操作按钮 -->
-        <div>
-          <div class="grid-2">
-            <button class="btn btn-primary" id="btnPreview">
-              <span>🔍</span> 预览 Preview
-            </button>
-            <button class="btn btn-success" id="btnCommit" disabled>
-              <span>💾</span> 提交 Commit
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 状态栏 -->
-      <div class="status-bar">
-        <div class="status-item">
-          <span class="status-label">任务ID</span>
-          <span class="status-value"><code id="jobId">-</code></span>
-        </div>
-        <div class="status-item">
-          <span class="status-label">状态</span>
-          <span id="status" class="status-badge ok">等待操作</span>
-        </div>
-      </div>
-
-      <!-- 预览结果 -->
-      <h4>📋 预览结果</h4>
-      <div id="previewBox" class="preview-box">
-        <pre>尚未预览数据</pre>
-      </div>
-    </div>
-
-    <!-- 列表卡片 -->
-    <div class="card fade-in">
-      <h3>📋 志愿者列表</h3>
-
-      <!-- 筛选行 - 使用5列网格 -->
-      <div class="grid-5">
-        <div class="form-group">
-          <label>姓名搜索</label>
-          <input id="q" placeholder="例如：王老师" />
-        </div>
-
-        <div class="form-group">
-          <label>院系/专业</label>
-          <input id="department_q" placeholder="例如：计算机" />
-        </div>
-
-        <div class="form-group">
-          <label>匹配模式</label>
-          <select id="match_mode">
-            <option value="">全部</option>
-            <option value="direct">direct (直接)</option>
-            <option value="pre">pre (预备)</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>教学模式</label>
-          <select id="mode">
-            <option value="">全部</option>
-            <option value="online">线上 online</option>
-            <option value="offline">线下 offline</option>
-            <option value="both">混合 both</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>每页条数</label>
-          <select id="limit">
-            <option value="10">10 条</option>
-            <option value="20" selected>20 条</option>
-            <option value="50">50 条</option>
-            <option value="100">100 条</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- 操作栏 -->
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <button class="btn btn-primary" id="btnLoad">
-            <span>🔄</span> 加载列表
-          </button>
-        </div>
-
-        <!-- 分页 -->
-        <div class="pagination">
-          <button class="btn btn-outline btn-icon" id="btnPrev" title="上一页">←</button>
-          <span class="page-info">
-            <span id="offsetLabel">0</span> - <span id="totalLabel">0</span>
-          </span>
-          <button class="btn btn-outline btn-icon" id="btnNext" title="下一页">→</button>
-        </div>
-      </div>
-
-      <!-- 批量操作栏 -->
-      <div class="action-bar">
-        <div class="flex items-center gap-4">
-          <label class="flex items-center gap-2">
-            <input type="checkbox" id="selectAll" onchange="toggleAll()">
-            <span>全选</span>
-          </label>
-          <span class="selected-info">
-            已选择 <span id="selectedCount" class="selected-count">0</span> 项
-          </span>
-        </div>
-        <button class="btn btn-danger btn-sm" id="btnDeleteSelected" onclick="showDeleteModal()" disabled>
-          <span>🗑️</span> 批量删除
-        </button>
-      </div>
-
-      <!-- 表格 -->
-      <div class="table-container" style="margin-top: 16px;">
-        <table>
-          <thead>
-            <tr>
-              <th class="checkbox-all">
-                <input type="checkbox" id="selectAllHeader" onchange="toggleAllFromHeader()">
-              </th>
-              <th>编号</th>
-              <th>姓名</th>
-              <th>性别</th>
-              <th>学号</th>
-              <th>邮箱</th>
-              <th>院系/专业</th>
-              <th>模式</th>
-              <th>匹配模式</th>
-              <th>容量</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody id="tbody">
-            <tr>
-              <td colspan="11" style="text-align: center; padding: 40px; color: #94a3b8;">
-                ⏳ 点击「加载列表」查看数据
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- 调试日志 -->
-      <h4 style="margin-top: 24px;">🔧 调试日志</h4>
-      <div class="log-box">
-        <pre id="log">系统初始化完成，等待操作...</pre>
-      </div>
+    <div style="margin-top:12px;">
+      <h3>预览行（前50行）</h3>
+      <div id="previewTable"></div>
     </div>
   </div>
 
+  <div class="card">
+    <div class="section-title">
+      <h2>志愿者列表</h2>
+      <div class="row">
+        <button id="reloadBtn" class="btn">刷新</button>
+      </div>
+    </div>
+
+    <div class="row" style="margin-bottom:8px;">
+      <div class="col">
+        <label>关键词（序号/姓名/院系）</label>
+        <input id="qInput" type="text" placeholder="如：2001 / 李四 / 计算机" />
+      </div>
+      <div class="col">
+        <label>辅导方式</label>
+        <select id="modeFilter">
+          <option value="">全部</option>
+          <option value="offline">offline</option>
+          <option value="online">online</option>
+          <option value="both">both</option>
+        </select>
+      </div>
+      <div class="col">
+        <label>匹配模式</label>
+        <select id="matchModeFilter">
+          <option value="">全部</option>
+          <option value="direct">direct</option>
+          <option value="pre">pre</option>
+        </select>
+      </div>
+      <div class="col">
+        <label>是否参加过</label>
+        <select id="joinedFilter">
+          <option value="">全部</option>
+          <option value="1">1</option>
+          <option value="0">0</option>
+        </select>
+      </div>
+      <div class="col">
+        <label>每页</label>
+        <select id="limitSelect">
+          <option value="20">20</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+      </div>
+      <div class="col">
+        <label>&nbsp;</label>
+        <button id="searchBtn" class="btn primary">查询</button>
+      </div>
+    </div>
+
+    <div id="listMsg"></div>
+    <div id="volunteersTable"></div>
+    <div id="volunteersPager"></div>
+  </div>
+</div>
+
 <script>
-  // ====== 配置 ======
-  const BASE = "http://127.0.0.1:8000";
-  document.getElementById("baseLabel").textContent = BASE;
+  let previewJobId = null;
+  let listState = { offset: 0, limit: 20, total: 0 };
 
-  // ====== 状态 ======
-  let currentJobId = null;
-  let offset = 0;
-  let total = 0;
-  let selectedItems = new Set(); // 存储选中的seq_no
+  function initApiBaseUI() {
+    $("#apiBase").value = APP.getApiBase();
+    $("#saveApiBaseBtn").onclick = () => {
+      APP.setApiBase($("#apiBase").value);
+      showMsg($("#topMsg"), "API Base 已保存：" + APP.getApiBase(), "success");
+    };
+  }
 
-  const $ = (id) => document.getElementById(id);
+  function renderStats(stats) {
+    const box = $("#previewStats");
+    if (!stats) {
+      box.innerHTML = `<div class="empty">暂无预览统计</div>`;
+      return;
+    }
+    const items = [
+      ["总行数", stats.total_rows],
+      ["有效行", stats.valid_rows],
+      ["错误行", stats.error_rows],
+      ["文件内重复", stats.duplicate_rows_in_file],
+    ];
+    box.innerHTML = items.map(([k,v]) => `
+      <div class="stat"><div class="k">${escapeHtml(k)}</div><div class="v">${escapeHtml(v)}</div></div>
+    `).join("");
+  }
 
-  function log(msg, obj) {
-    const el = $("log");
-    const timestamp = new Date().toLocaleTimeString();
-    const content = `[${timestamp}] ${msg}` + (obj ? "\n" + JSON.stringify(obj, null, 2) : "");
-    el.textContent = content + "\n\n" + el.textContent;
-    // 限制日志行数
-    const lines = el.textContent.split('\n');
-    if (lines.length > 100) {
-      el.textContent = lines.slice(0, 100).join('\n');
+  function renderErrorSummary(arr) {
+    const box = $("#errorSummary");
+    if (!arr || arr.length === 0) {
+      box.innerHTML = `<div class="empty">无错误</div>`;
+      return;
+    }
+    renderTable(box, [
+      { key: "error", label: "错误" },
+      { key: "count", label: "次数" },
+    ], arr, { emptyText: "无错误" });
+  }
+
+  function renderPreviewRows(rows) {
+    renderTable($("#previewTable"), [
+      { key: "row_no", label: "行号" },
+      { key: "errors", label: "错误", render: r => (r.errors || []).join(" | ") },
+      { key: "data", label: "解析结果", render: r => r.data ? JSON.stringify(r.data, null, 2) : "" },
+    ], rows || [], { emptyText: "暂无预览数据" });
+  }
+
+  async function doPreview() {
+    const file = $("#fileInput").files[0];
+    if (!file) {
+      showMsg($("#importMsg"), "请先选择xlsx文件", "warn");
+      return;
+    }
+    previewJobId = null;
+    $("#commitBtn").disabled = true;
+    showMsg($("#importMsg"), "正在预览...", "info");
+    try {
+      const data = await apiUpload("/api/volunteers/import/preview", file);
+      previewJobId = data.job_id;
+      renderStats(data.stats);
+      renderErrorSummary(data.error_summary);
+      renderPreviewRows(data.preview || data.rows || []);
+      $("#commitBtn").disabled = false;
+      showMsg($("#importMsg"), `预览完成，job_id=${previewJobId}`, "success");
+    } catch (e) {
+      showMsg($("#importMsg"), "预览失败：" + e.message, "error");
     }
   }
 
-  function setStatus(text, ok=true) {
-    const el = $("status");
-    el.textContent = text;
-    el.className = `status-badge ${ok ? 'ok' : 'bad'}`;
+  async function doCommit() {
+    if (!previewJobId) {
+      showMsg($("#importMsg"), "请先预览导入", "warn");
+      return;
+    }
+    $("#commitBtn").disabled = true;
+    showMsg($("#importMsg"), "正在提交导入...", "info");
+    try {
+      const data = await apiPost(`/api/volunteers/import/${encodeURIComponent(previewJobId)}/commit`);
+      showMsg($("#importMsg"), data.message || "导入完成", "success");
+      previewJobId = null;
+      await loadVolunteers(true);
+    } catch (e) {
+      showMsg($("#importMsg"), "提交失败：" + e.message, "error");
+      $("#commitBtn").disabled = false;
+    }
   }
 
-  function getListParams() {
+  function getListQuery() {
+    return {
+      q: $("#qInput").value.trim(),
+      mode: $("#modeFilter").value,
+      matchMode: $("#matchModeFilter").value,
+      joinedBefore: $("#joinedFilter").value,
+      limit: Number($("#limitSelect").value || 20),
+    };
+  }
+
+  async function loadVolunteers(resetOffset = false) {
+    if (resetOffset) listState.offset = 0;
+    const qv = getListQuery();
+    listState.limit = qv.limit;
+
     const params = new URLSearchParams();
-    const q = $("q").value.trim();
-    const dept = $("department_q").value.trim();
-    const match = $("match_mode").value;
-    const mode = $("mode").value;
-    const limit = $("limit").value;
+    params.set("offset", String(listState.offset));
+    params.set("limit", String(listState.limit));
+    if (qv.q) params.set("q", qv.q);
+    if (qv.mode) params.set("tutoring_mode", qv.mode);
+    if (qv.matchMode) params.set("match_mode", qv.matchMode);
+    if (qv.joinedBefore !== "") params.set("joined_before", qv.joinedBefore);
 
-    params.set("offset", String(offset));
-    params.set("limit", String(limit));
-    if (q) params.set("q", q);
-    if (dept) params.set("department_q", dept);
-    if (match) params.set("match_mode", match);
-    if (mode) params.set("mode", mode);
-    return params;
-  }
-
-  // 更新全选按钮状态
-  function updateSelectAllState() {
-    const checkboxes = document.querySelectorAll('.item-checkbox');
-    const selectAllHeader = $('selectAllHeader');
-    const selectAll = $('selectAll');
-    const selectedCount = selectedItems.size;
-    
-    $('selectedCount').textContent = selectedCount;
-    $('btnDeleteSelected').disabled = selectedCount === 0;
-    
-    if (selectAllHeader) {
-      selectAllHeader.checked = checkboxes.length > 0 && checkboxes.length === selectedCount;
-      selectAllHeader.indeterminate = selectedCount > 0 && selectedCount < checkboxes.length;
-    }
-    
-    if (selectAll) {
-      selectAll.checked = checkboxes.length > 0 && checkboxes.length === selectedCount;
-      selectAll.indeterminate = selectedCount > 0 && selectedCount < checkboxes.length;
-    }
-  }
-
-  // 切换全选
-  function toggleAll() {
-    const selectAll = $('selectAll');
-    const checkboxes = document.querySelectorAll('.item-checkbox');
-    
-    selectedItems.clear();
-    if (selectAll.checked) {
-      checkboxes.forEach(cb => {
-        cb.checked = true;
-        selectedItems.add(cb.value);
+    showMsg($("#listMsg"), "正在加载志愿者列表...", "info");
+    try {
+      const data = await apiGet(`/api/volunteers?${params.toString()}`);
+      listState.total = data.total || 0;
+      renderVolunteersTable(data.items || []);
+      renderPager($("#volunteersPager"), listState, (next) => {
+        listState.offset = next.offset;
+        listState.limit = next.limit;
+        loadVolunteers(false);
       });
-    } else {
-      checkboxes.forEach(cb => {
-        cb.checked = false;
-      });
+      showMsg($("#listMsg"), `加载完成：共 ${listState.total} 条`, "success");
+    } catch (e) {
+      showMsg($("#listMsg"), "加载失败：" + e.message, "error");
     }
-    
-    updateSelectAllState();
   }
 
-  function toggleAllFromHeader() {
-    const selectAllHeader = $('selectAllHeader');
-    const selectAll = $('selectAll');
-    selectAll.checked = selectAllHeader.checked;
-    toggleAll();
-  }
+  function renderVolunteersTable(rows) {
+    const columns = [
+      { key: "seq_no", label: "序号" },
+      { key: "name", label: "姓名" },
+      { key: "gender", label: "性别" },
+      { key: "department", label: "院系" },
+      { key: "tutoring_mode", label: "辅导方式" },
+      { key: "match_mode", label: "匹配模式" },
+      { key: "student_gender_requirement", label: "学生性别要求" },
+      { key: "joined_before", label: "参加过", render: r => fmtBool01(r.joined_before) },
+      { key: "subj1", label: "科目1" },
+      { key: "subj2", label: "科目2" },
+      { key: "subj3", label: "科目3" },
+      { key: "stage_pref1", label: "学段1" },
+      { key: "stage_pref2", label: "学段2" },
+      { key: "stage_pref3", label: "学段3" },
+      { key: "capacity", label: "容量" },
+      { key: "personality", label: "个人性格" },
+    ];
 
-  // 显示删除确认对话框
-  function showDeleteModal() {
-    if (selectedItems.size === 0) return;
-    $('selectedCountDisplay').textContent = selectedItems.size;
-    $('deleteModal').style.display = 'flex';
-  }
+    renderTable($("#volunteersTable"), columns, rows, {
+      emptyText: "暂无志愿者数据",
+      rowActions: (r) => `
+        <button class="btn danger" data-action="delete" data-seq="${escapeHtml(r.seq_no)}">删除</button>
+      `,
+    });
 
-  function hideDeleteModal() {
-    $('deleteModal').style.display = 'none';
-  }
-
-  // 批量删除
-  async function deleteSelected() {
-    const seqNos = Array.from(selectedItems);
-    log("🗑️ 批量删除", { count: seqNos.length, seq_nos: seqNos });
-    
-    try {
-      // 这里需要实现批量删除的API
-      // 假设有一个批量删除的接口：DELETE /api/volunteers/batch
-      // 如果后端没有批量删除接口，可以逐个删除
-      for (const seqNo of seqNos) {
-        const res = await fetch(`${BASE}/api/volunteers/${encodeURIComponent(seqNo)}`, {
-          method: 'DELETE'
-        });
-        if (!res.ok) {
-          throw new Error(`删除 ${seqNo} 失败`);
-        }
+    $("#volunteersTable").onclick = async (e) => {
+      const btn = e.target.closest("button[data-action='delete']");
+      if (!btn) return;
+      const seq = btn.dataset.seq;
+      if (!confirm(`确认删除志愿者序号 ${seq} ?`)) return;
+      try {
+        await apiDelete(`/api/volunteers/${encodeURIComponent(seq)}`);
+        showMsg($("#listMsg"), `已删除志愿者 ${seq}`, "success");
+        await loadVolunteers(false);
+      } catch (err) {
+        showMsg($("#listMsg"), "删除失败：" + err.message, "error");
       }
-      
-      alert(`✅ 成功删除 ${seqNos.length} 条记录`);
-      selectedItems.clear();
-      hideDeleteModal();
-      await loadVolunteers(); // 重新加载列表
-      
-    } catch (error) {
-      log("❌ 批量删除失败", { message: error.message });
-      alert(`删除失败: ${error.message}`);
-    }
+    };
   }
 
-  // 删除单个志愿者
-  async function deleteVolunteer(seqNo) {
-    if (!confirm(`确定要删除志愿者 ${seqNo} 吗？`)) return;
-    
-    log("🗑️ 删除单个", { seq_no: seqNo });
-    
-    try {
-      const res = await fetch(`${BASE}/api/volunteers/${encodeURIComponent(seqNo)}`, {
-        method: 'DELETE'
-      });
-      
-      if (!res.ok) {
-        throw new Error('删除失败');
-      }
-      
-      alert(`✅ 删除成功`);
-      selectedItems.delete(seqNo);
-      await loadVolunteers(); // 重新加载列表
-      
-    } catch (error) {
-      log("❌ 删除失败", { message: error.message });
-      alert(`删除失败: ${error.message}`);
-    }
+  function bindEvents() {
+    $("#previewBtn").onclick = doPreview;
+    $("#commitBtn").onclick = doCommit;
+    $("#reloadBtn").onclick = () => loadVolunteers(false);
+    $("#searchBtn").onclick = () => loadVolunteers(true);
+    $("#qInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") loadVolunteers(true);
+    });
   }
 
-  async function loadVolunteers() {
-    const params = getListParams();
-    const url = `${BASE}/api/volunteers?${params.toString()}`;
-    log("📥 请求列表", { url });
-
-    try {
-      const res = await fetch(url);
-      const data = await res.json();
-
-      if (!res.ok) {
-        setStatus("加载失败", false);
-        log("❌ 错误", data);
-        return;
-      }
-
-      total = data.total;
-      $("totalLabel").textContent = String(total);
-      $("offsetLabel").textContent = String(offset);
-
-      const tbody = $("tbody");
-      tbody.innerHTML = "";
-
-      if (data.items.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; padding: 40px; color: #94a3b8;">📭 暂无志愿者数据</td></tr>`;
-      } else {
-        for (const v of data.items) {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td class="checkbox-column">
-              <input type="checkbox" class="item-checkbox" value="${v.seq_no}" onchange="handleItemCheck(this)" ${selectedItems.has(v.seq_no) ? 'checked' : ''}>
-            </td>
-            <td><code>${v.seq_no}</code></td>
-            <td><strong>${v.name ?? ""}</strong></td>
-            <td>${v.gender ?? ""}</td>
-            <td>${v.student_no ?? ""}</td>
-            <td>${v.email ?? ""}</td>
-            <td>${v.department_major ?? ""}</td>
-            <td>${v.mode ?? ""}</td>
-            <td><span style="background: #e2e8f0; padding: 2px 8px; border-radius: 12px;">${v.match_mode ?? ""}</span></td>
-            <td><span style="background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 12px;">${v.capacity ?? ""}</span></td>
-            <td>
-              <button class="btn btn-outline btn-sm" onclick="deleteVolunteer('${v.seq_no}')" title="删除">
-                <span>🗑️</span>
-              </button>
-            </td>
-          `;
-          tbody.appendChild(tr);
-        }
-      }
-
-      setStatus(`已加载 ${data.items.length} 条`, true);
-      log("✅ 列表加载成功", { total, returned: data.items.length });
-      
-      // 更新全选状态
-      updateSelectAllState();
-
-    } catch (error) {
-      setStatus("请求失败", false);
-      log("❌ 网络错误", { message: error.message });
-    }
-  }
-
-  // 处理单个复选框
-  window.handleItemCheck = function(checkbox) {
-    if (checkbox.checked) {
-      selectedItems.add(checkbox.value);
-    } else {
-      selectedItems.delete(checkbox.value);
-    }
-    updateSelectAllState();
-  }
-
-  // ====== 导入 preview ======
-  $("btnPreview").addEventListener("click", async () => {
-    const fileInput = $("fileInput");
-    const file = fileInput.files[0];
-    if (!file) { 
-      alert("请先选择 Excel 文件");
-      return; 
-    }
-
-    const strict = $("strictSel").value;
-
-    const form = new FormData();
-    form.append("file", file);
-
-    const url = `${BASE}/api/volunteers/import/preview?strict=${encodeURIComponent(strict)}&max_preview_rows=50`;
-    log("📤 预览请求", { file: file.name, size: file.size, strict });
-
-    try {
-      const res = await fetch(url, { method: "POST", body: form });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setStatus("预览失败", false);
-        $("previewBox").innerHTML = `<pre style="color: #f87171;">${JSON.stringify(data, null, 2)}</pre>`;
-        log("❌ 预览失败", data);
-        return;
-      }
-
-      currentJobId = data.job_id;
-      $("jobId").textContent = currentJobId;
-      $("btnCommit").disabled = false;
-      setStatus("预览成功", true);
-
-      // 显示 stats + error_summary + preview
-      const stats = data.stats || {};
-      const summary = data.error_summary || [];
-      const preview = data.preview || [];
-
-      const errorColor = stats.error_rows > 0 ? '#f87171' : '#4ade80';
-      
-      $("previewBox").innerHTML = `
-        <div style="display: flex; gap: 24px; margin-bottom: 16px; padding: 12px; background: #334155; border-radius: 12px;">
-          <div><span style="color: #94a3b8;">总行数:</span> <span style="color: white; font-weight: 600;">${stats.total_rows}</span></div>
-          <div><span style="color: #94a3b8;">有效:</span> <span style="color: #4ade80; font-weight: 600;">${stats.valid_rows}</span></div>
-          <div><span style="color: #94a3b8;">错误:</span> <span style="color: ${errorColor}; font-weight: 600;">${stats.error_rows}</span></div>
-        </div>
-        ${summary.length > 0 ? `<div style="margin-bottom: 12px;"><span style="color: #f87171;">错误汇总:</span><pre style="color: #f87171;">${JSON.stringify(summary, null, 2)}</pre></div>` : ''}
-        <div><span style="color: #94a3b8;">预览前5行:</span></div>
-        <pre style="color: #e2e8f0;">${JSON.stringify(preview.slice(0, 5), null, 2)}</pre>
-      `;
-      
-      log("✅ 预览成功", { job_id: currentJobId, stats });
-
-    } catch (error) {
-      setStatus("网络错误", false);
-      log("❌ 预览网络错误", { message: error.message });
-      $("previewBox").innerHTML = `<pre style="color: #f87171;">网络请求失败: ${error.message}</pre>`;
-    }
-  });
-
-  // ====== commit ======
-  $("btnCommit").addEventListener("click", async () => {
-    if (!currentJobId) { alert("请先 preview"); return; }
-    const url = `${BASE}/api/volunteers/import/${encodeURIComponent(currentJobId)}/commit`;
-    log("📤 提交请求", { job_id: currentJobId });
-
-    try {
-      const res = await fetch(url, { method: "POST" });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setStatus("提交失败", false);
-        log("❌ 提交失败", data);
-        
-        // 显示友好的错误信息
-        let errorMsg = "提交失败：\n";
-        if (data.detail) {
-          if (typeof data.detail === 'object') {
-            errorMsg += JSON.stringify(data.detail, null, 2);
-          } else {
-            errorMsg += data.detail;
-          }
-        } else {
-          errorMsg += JSON.stringify(data, null, 2);
-        }
-        alert(errorMsg);
-        return;
-      }
-
-      setStatus("提交成功", true);
-      log("✅ 提交成功", data);
-      
-      // 显示成功信息
-      const message = data.message || `成功导入 ${data.inserted || 0} 条数据`;
-      alert(`✅ ${message}`);
-      
-      // 自动刷新列表
-      offset = 0;
-      await loadVolunteers();
-      
-      // 清空文件选择
-      $("fileInput").value = "";
-      $("btnCommit").disabled = true;
-      
-    } catch (error) {
-      setStatus("网络错误", false);
-      log("❌ 提交网络错误", { message: error.message });
-      alert(`网络请求失败: ${error.message}`);
-    }
-  });
-
-  // ====== 列表按钮 ======
-  $("btnLoad").addEventListener("click", async () => {
-    offset = 0;
-    await loadVolunteers();
-  });
-
-  $("btnPrev").addEventListener("click", async () => {
-    const limit = parseInt($("limit").value, 10);
-    if (offset === 0) return;
-    offset = Math.max(0, offset - limit);
-    await loadVolunteers();
-  });
-
-  $("btnNext").addEventListener("click", async () => {
-    const limit = parseInt($("limit").value, 10);
-    if (offset + limit >= total) return;
-    offset = offset + limit;
-    await loadVolunteers();
-  });
-
-  // 文件上传区域点击
-  const fileUpload = document.querySelector('.file-upload');
-  if (fileUpload) {
-    fileUpload.addEventListener('click', () => document.getElementById('fileInput').click());
-  }
-
-  // 文件选择后显示文件名
-  $("fileInput").addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const label = document.querySelector('.file-upload-text');
-      if (label) {
-        label.textContent = `📄 ${file.name}`;
-        label.style.color = '#059669';
-      }
-    }
-  });
-
-  // 确认删除按钮
-  $('confirmDeleteBtn').addEventListener('click', deleteSelected);
-
-  // 初始化全选按钮事件
-  $('selectAll').addEventListener('change', toggleAll);
-  $('selectAllHeader').addEventListener('change', toggleAllFromHeader);
-
-  // 初次加载
-  loadVolunteers().catch(e => log("初始化错误", { message: e.message }));
+  (function main() {
+    initApiBaseUI();
+    bindEvents();
+    renderStats(null);
+    renderErrorSummary([]);
+    renderPreviewRows([]);
+    loadVolunteers(true);
+  })();
 </script>
 </body>
 </html>

@@ -1,77 +1,154 @@
-# schemas.py
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Optional
+from __future__ import annotations
+
+from typing import Any, List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
-class ErrorDetail(BaseModel):
-    code: str
+# =========================
+# 通用响应模型
+# =========================
+
+class MessageOut(BaseModel):
     message: str
 
 
-class StudentOut(BaseModel):
-    """学生输出模型"""
-    model_config = ConfigDict(from_attributes=True)
-    
-    seq_no: str  # 匹配模型：String
-    name: str
-    gender: str
-    grade_stage: int
-    mode: str
-    subj1: str  # 匹配模型：String
-    subj2: str
-    subj3: str
-    weakness_text: Optional[str] = None
-    learning_style: Optional[str] = None
-    interests_text: Optional[str] = None
-    personality_text: Optional[str] = None
-    social_worker_name: Optional[str] = None  # 匹配模型：允许 None
-    social_worker_phone: Optional[str] = None  # 匹配模型：允许 None
-    is_priority: bool
-    special_needs_text: Optional[str] = None
-
-
-class VolunteerOut(BaseModel):
-    """志愿者输出模型"""
-    model_config = ConfigDict(from_attributes=True)
-    
+class DeleteResponse(BaseModel):
+    ok: bool = True
+    deleted: int = 1
     seq_no: str
+    entity: str
+
+
+class RootResponse(BaseModel):
     name: str
-    gender: str
-    student_no: Optional[str] = None
-    email: Optional[str] = None
-    department_major: Optional[str] = None
-    mode: str
-    match_mode: str
-    gender_requirement: str
-    grade1: int
-    grade2: int
-    grade3: int
-    subj1: str  # 改为 String
-    subj2: str
-    subj3: str
-    capacity: int
-    teaching_style_text: Optional[str] = None
-    participated_before: bool = False
+    status: str
+    version: str
+    docs: str
 
 
-class Paginated(BaseModel):
-    total: int
-    items: List
+# =========================
+# 导入预览 / 提交
+# =========================
+
+class ImportPreviewRowOut(BaseModel):
+    row_no: int
+    data: Optional[dict[str, Any]] = None
+    errors: List[str] = Field(default_factory=list)
 
 
-class ImportStats(BaseModel):
-    total_rows: int
-    valid_rows: int
-    error_rows: int
+class ImportPreviewStatsOut(BaseModel):
+    total_rows: int = 0
+    valid_rows: int = 0
+    error_rows: int = 0
+    duplicate_rows_in_file: int = 0
 
 
 class ImportPreviewResponse(BaseModel):
     job_id: str
-    stats: ImportStats
-    error_summary: list = Field(default_factory=list)
-    preview: list = Field(default_factory=list)
+    entity: str  # students / volunteers
+
+    stats: ImportPreviewStatsOut
+    error_summary: list[dict[str, Any]] = Field(default_factory=list)
+
+    # 为兼容旧前端命名，保留 preview 字段
+    preview: List[ImportPreviewRowOut] = Field(default_factory=list)
+
+    # 同时提供 rows 字段，后续新前端可直接用
+    rows: List[ImportPreviewRowOut] = Field(default_factory=list)
+
+    # 仅统计信息，不回传所有 valid_rows 原始数据给前端
+    preview_limit: int = 50
 
 
 class ImportCommitResponse(BaseModel):
+    ok: bool = True
+    entity: str  # students / volunteers
     job_id: str
-    inserted: int
+
+    total_candidates: int = 0
+    inserted: int = 0
+    skipped_existing: int = 0
+
+    # 额外信息
+    message: str = ""
+
+
+# =========================
+# 学生 / 老师输出模型
+# =========================
+
+class StudentOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    seq_no: str
+    name: str
+    gender: str
+
+    stage_code: int
+    tutoring_mode: str
+
+    subj1: int
+    subj2: int
+    subj3: int
+
+    student_profile: str
+    learning_style: str
+    interests: str
+    personality: str
+
+    social_worker_name: str
+    social_worker_phone: str
+    is_priority: bool
+    special_need: str
+
+    # 兼容旧前端字段名（可直接返回）
+    grade_stage: int
+    mode: str
+
+
+class VolunteerOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    seq_no: str
+    name: str
+    gender: str
+
+    student_no: str
+    email: str
+    department: str
+
+    tutoring_mode: str
+    match_mode: str
+    joined_before: bool
+    personality: str
+    student_gender_requirement: str
+
+    subj1: int
+    subj2: int
+    subj3: int
+
+    stage_pref1: int
+    stage_pref2: int
+    stage_pref3: int
+
+    capacity: int
+
+    # 兼容旧前端可能使用的字段名
+    mode: str
+
+
+class PagedStudentsResponse(BaseModel):
+    total: int
+    offset: int
+    limit: int
+    items: list[StudentOut]
+
+
+class PagedVolunteersResponse(BaseModel):
+    total: int
+    offset: int
+    limit: int
+    items: list[VolunteerOut]
